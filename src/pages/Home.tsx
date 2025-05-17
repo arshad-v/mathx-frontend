@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Sparkles, Code, Wand2, Video } from 'lucide-react';
+import heroVideo from '../assets/hero.mp4';
 
 const Home: React.FC = () => {
   const features = [
@@ -77,9 +78,12 @@ const Home: React.FC = () => {
             transition={{ duration: 1, delay: 0.6 }}
           >
             <div className="video-container shadow-2xl shadow-primary-900/20 border border-gray-800">
-              <img 
-                src="https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" 
-                alt="AI animation example" 
+              <video 
+                src={heroVideo} 
+                autoPlay 
+                loop 
+                muted 
+                playsInline
                 className="w-full h-full object-cover rounded-lg"
               />
             </div>
