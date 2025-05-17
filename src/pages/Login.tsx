@@ -57,6 +57,8 @@ const Login: React.FC = () => {
     setError('');
     
     try {
+      // Since we've configured the redirect URLs in Supabase dashboard,
+      // we can simply use the current origin with the callback path
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
