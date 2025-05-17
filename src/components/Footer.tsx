@@ -45,7 +45,7 @@ const Footer: React.FC = () => {
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
               <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-secondary-400">
-                AnimGenius
+                Mathx.ai
               </span>
             </div>
             <p className="text-gray-400 mb-6 max-w-md">
@@ -111,7 +111,7 @@ const Footer: React.FC = () => {
         <div className="mt-12 pt-8 border-t border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-gray-400 text-sm mb-4 md:mb-0">
-              © {currentYear} AnimGenius. All rights reserved.
+              © {currentYear} Mathx.ai . All rights reserved.
             </div>
             <div className="flex items-center space-x-2 text-sm text-gray-400">
               <span>Powered by</span>
