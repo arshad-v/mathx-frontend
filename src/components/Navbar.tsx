@@ -27,7 +27,7 @@ const Navbar: React.FC = () => {
                 <Sparkles className="h-6 w-6 text-white" />
               </div>
               <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-secondary-400">
-                AnimGenius
+                Mathx.AI
               </span>
             </Link>
           </div>
