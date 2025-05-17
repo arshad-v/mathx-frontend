@@ -166,7 +166,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user }) => {
                   <MessageSquarePlus className="h-4 w-4 text-white" />
                 </div>
                 <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-secondary-400">
-                  AnimGenius
+                  Mathx.ai
                 </span>
               </div>
               <button 
