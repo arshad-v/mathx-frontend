@@ -63,7 +63,7 @@ const Home: React.FC = () => {
               transition={{ duration: 0.5, delay: 0.4 }}
             >
               <Link to="/create" className="btn btn-primary px-6 py-3 text-lg">
-                Get Started
+                Start with Free
               </Link>
               <Link to="/pricing" className="btn btn-outline px-6 py-3 text-lg">
                 View Pricing
@@ -97,7 +97,7 @@ const Home: React.FC = () => {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-white">How It Works:</h2>
             <p className="mt-4 text-gray-400 max-w-2xl mx-auto">
-              AnimGenius combines state-of-the-art AI with stunning visualizations to bring your concepts to life
+              Mathx.ai combines state-of-the-art AI with stunning visualizations to bring your concepts to life
             </p>
           </div>
           
