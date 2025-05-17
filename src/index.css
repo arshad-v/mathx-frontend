@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-opacity-50;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary-600 hover:bg-secondary-700 text-white focus:ring-secondary-500;
+  }
+  
+  .btn-outline {
+    @apply border border-gray-600 hover:bg-gray-700 focus:ring-gray-400;
+  }
+  
+  .input {
+    @apply w-full px-4 py-2 bg-dark-100 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+  
+  .card {
+    @apply bg-dark-200 rounded-xl shadow-lg overflow-hidden;
+  }
+  
+  .gradient-bg {
+    @apply bg-gradient-to-br from-primary-900 via-primary-800 to-secondary-900;
+  }
+}
+
+.video-container {
+  aspect-ratio: 16 / 9;
+  @apply bg-black rounded-lg overflow-hidden shadow-lg;
+}
+
+.code-container {
+  @apply font-mono text-sm p-4 bg-dark-400 rounded-lg overflow-x-auto;
+}
