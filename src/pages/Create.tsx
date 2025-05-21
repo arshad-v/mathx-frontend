@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Loader, Play, Download, Coins, Sparkles, Zap, AlertTriangle } from 'lucide-react';
+import { Loader, Play, Download, Coins } from 'lucide-react';
 import PromptForm from '../components/PromptForm';
 import VideoPlayer from '../components/VideoPlayer';
 
@@ -51,7 +51,6 @@ const Create: React.FC = () => {
       });
   }, [navigate, backendUrl]);
 
-  // Handle the submission of a new animation prompt
   const handleSubmit = async (inputPrompt: string) => {
     if (!serverAvailable) {
       setError('Backend server is not running.');
@@ -94,7 +93,6 @@ const Create: React.FC = () => {
     }
   };
 
-  // Handle the download of the generated animation
   const handleDownload = async () => {
     if (!result?.videoUrl) return;
     
@@ -116,106 +114,110 @@ const Create: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-dark-100 to-dark-300">
-      <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-        <motion.div 
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
+    <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+      <div className="text-center mb-12">
+        <motion.h1 
+          className="text-3xl font-bold text-white"
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.5 }}
         >
-          <div className="inline-flex items-center justify-center p-1 px-3 mb-4 bg-primary-900/30 backdrop-blur-sm rounded-full border border-primary-700/30 text-primary-400 text-sm">
-            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-            <span>Powered by Manim</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white">
-            Create Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-blue-400">Animation</span>
-          </h1>
-          <motion.p 
-            className="mt-4 text-gray-300 max-w-2xl mx-auto text-lg"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            Transform your mathematical concepts into beautiful visualizations with the power of AI and Manim
-          </motion.p>
-          <motion.div 
-            className="mt-6 inline-flex items-center justify-center gap-2 px-4 py-2 bg-dark-400/50 backdrop-blur-sm rounded-full border border-gray-700 text-gray-300"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <Coins className="h-5 w-5 text-primary-400" />
-            <span>You have <strong className="text-primary-400 font-medium">{tokens}</strong> tokens remaining</span>
-          </motion.div>
+          Create Your Animation
+        </motion.h1>
+        <motion.div 
+          className="mt-2 flex items-center justify-center gap-2 text-gray-400"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <Coins className="h-5 w-5 text-primary-400" />
+          <span>Tokens remaining: {tokens}</span>
         </motion.div>
+      </div>
       
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          <motion.div 
-            className="bg-dark-400/30 backdrop-blur-md rounded-2xl border border-gray-700/50 shadow-xl overflow-hidden"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-          >
-            <div className="p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-primary-900/40 rounded-lg">
-                  <Play className="h-5 w-5 text-primary-400" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <motion.div 
+          className="card h-full"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Enter Your Prompt</h2>
+            <PromptForm onSubmit={handleSubmit} isGenerating={status === 'generating'} />
+            
+            {status === 'generating' && (
+              <div className="mt-8 flex flex-col items-center justify-center p-8">
+                <div className="relative w-20 h-20">
+                  <div className="absolute inset-0 rounded-full border-t-2 border-primary-500 animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader className="h-8 w-8 text-primary-400 animate-pulse" />
+                  </div>
                 </div>
-                <h2 className="text-2xl font-semibold text-white">Animation Preview</h2>
+                <p className="mt-4 text-gray-400">Generating your animation...</p>
+                <div className="mt-2 text-xs text-gray-500">This may take a minute</div>
               </div>
+            )}
+            
+            {status === 'error' && (
+              <div className="mt-8 bg-red-900/20 border border-red-800 rounded-lg p-4 text-red-400">
+                <p className="font-medium">Error generating animation</p>
+                <p className="mt-1 text-sm">{error}</p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+        
+        <div>
+          <motion.div 
+            className="card"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Animation Preview</h2>
               
               {status === 'idle' && (
-                <div className="aspect-video bg-gradient-to-br from-dark-300 to-dark-400 rounded-xl flex items-center justify-center border border-gray-700/50 shadow-inner overflow-hidden group">
-                  <div className="text-center p-8 transform transition-transform duration-500 group-hover:scale-105">
-                    <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-dark-200/50 flex items-center justify-center border border-primary-800/20 shadow-lg">
-                      <Play className="h-8 w-8 text-primary-400/70" />
-                    </div>
-                    <p className="text-gray-300 font-medium text-lg">Your animation will appear here</p>
-                    <p className="mt-3 text-gray-400">
-                      Enter a prompt to get started with Manim visualization
+                <div className="aspect-video bg-dark-300 rounded-lg flex items-center justify-center border border-gray-800">
+                  <div className="text-center p-6">
+                    <Play className="mx-auto h-12 w-12 text-gray-600 mb-4" />
+                    <p className="text-gray-400">Your animation will appear here</p>
+                    <p className="mt-2 text-sm text-gray-500">
+                      Enter a prompt to get started
                     </p>
                   </div>
                 </div>
               )}
               
               {status === 'generating' && (
-                <div className="aspect-video bg-gradient-to-br from-dark-300 to-dark-400 rounded-xl flex items-center justify-center border border-gray-700/50 shadow-inner overflow-hidden">
-                  <div className="animate-pulse text-center p-8">
-                    <div className="relative h-32 w-32 mx-auto mb-6">
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary-900/40 to-primary-700/40 animate-pulse"></div>
-                      <div className="absolute inset-2 rounded-full bg-dark-300"></div>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Sparkles className="h-10 w-10 text-primary-400/70 animate-pulse" />
-                      </div>
-                    </div>
-                    <div className="h-4 bg-dark-200/80 rounded-full w-3/4 mx-auto"></div>
-                    <div className="h-4 bg-dark-200/60 rounded-full w-1/2 mx-auto mt-3"></div>
-                    <div className="h-4 bg-dark-200/40 rounded-full w-2/3 mx-auto mt-3"></div>
+                <div className="aspect-video bg-dark-300 rounded-lg flex items-center justify-center border border-gray-800">
+                  <div className="animate-pulse text-center">
+                    <div className="h-32 w-32 bg-dark-100 rounded-full mx-auto mb-4"></div>
+                    <div className="h-4 bg-dark-100 rounded w-3/4 mx-auto"></div>
+                    <div className="h-4 bg-dark-100 rounded w-1/2 mx-auto mt-2"></div>
                   </div>
                 </div>
               )}
               
               {status === 'complete' && result && (
                 <>
-                  <div className="rounded-xl overflow-hidden border border-gray-700/50 shadow-lg">
-                    <VideoPlayer videoUrl={result.videoUrl} />
-                  </div>
+                  <VideoPlayer videoUrl={result.videoUrl} />
                   
-                  <div className="mt-6 flex flex-col sm:flex-row justify-between gap-4">
+                  <div className="mt-4 flex justify-between">
                     <button 
                       onClick={handleDownload}
-                      className="btn-modern btn-outline flex items-center justify-center gap-2 py-3 px-5 rounded-xl text-gray-200 border-2 border-gray-700 hover:border-primary-500 hover:bg-primary-900/20 transition-all duration-300 font-medium"
+                      className="btn btn-outline flex items-center gap-1"
                     >
-                      <Download className="h-5 w-5" />
+                      <Download className="h-4 w-4" />
                       Download MP4
                     </button>
                     <button 
                       onClick={() => setStatus('idle')}
-                      className="btn-modern btn-primary flex items-center justify-center gap-2 py-3 px-5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white shadow-lg hover:shadow-primary-700/30 transition-all duration-300 font-medium"
+                      className="btn btn-primary flex items-center gap-1"
                     >
-                      <Sparkles className="h-5 w-5" />
-                      Create New Animation
+                      <Play className="h-4 w-4" />
+                      Generate New
                     </button>
                   </div>
                 </>
@@ -225,45 +227,19 @@ const Create: React.FC = () => {
           
           {status === 'complete' && (
             <motion.div 
-              className="mt-6 p-6 bg-dark-400/30 backdrop-blur-sm rounded-xl border border-gray-700/50 shadow-lg"
-              initial={{ opacity: 0, y: 20 }}
+              className="mt-6 p-4 bg-dark-200 rounded-lg border border-gray-800"
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
             >
-              <h3 className="font-medium text-white text-lg mb-3">Prompt Used:</h3>
-              <div className="bg-dark-300/70 p-4 rounded-lg border border-gray-700/70 shadow-inner">
-                <p className="text-gray-300 font-mono">
-                  {prompt}
-                </p>
-              </div>
+              <h3 className="font-medium mb-2">Prompt Used:</h3>
+              <p className="text-gray-300 bg-dark-300 p-3 rounded border border-gray-700">
+                {prompt}
+              </p>
             </motion.div>
           )}
         </div>
       </div>
-      
-      {/* Tips Section */}
-      <motion.div 
-        className="max-w-4xl mx-auto mt-16 mb-8 px-6 py-8 bg-dark-400/20 backdrop-blur-sm rounded-2xl border border-primary-800/20 shadow-lg"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.6 }}
-      >
-        <h3 className="text-xl font-semibold text-white mb-4 text-center">Tips for Creating Great Manim Animations</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          <div className="p-4 bg-dark-300/50 rounded-xl border border-gray-700/50">
-            <h4 className="font-medium text-primary-400 mb-2">Be Specific</h4>
-            <p className="text-gray-300 text-sm">Describe exactly what mathematical concept you want to visualize and how you want it to be presented.</p>
-          </div>
-          <div className="p-4 bg-dark-300/50 rounded-xl border border-gray-700/50">
-            <h4 className="font-medium text-primary-400 mb-2">Include Transitions</h4>
-            <p className="text-gray-300 text-sm">Mention how elements should transform or move to create smooth, engaging animations.</p>
-          </div>
-          <div className="p-4 bg-dark-300/50 rounded-xl border border-gray-700/50">
-            <h4 className="font-medium text-primary-400 mb-2">Add Context</h4>
-            <p className="text-gray-300 text-sm">Include educational context or explanations you want displayed alongside the visual elements.</p>
-          </div>
-        </div>
-      </motion.div>
     </div>
   );
 };
