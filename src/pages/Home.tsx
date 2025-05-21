@@ -114,45 +114,6 @@ const Home: React.FC = () => {
         </div>
       </section>
       
-      {/* Features section */}
-      <section className="py-20 bg-dark-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-white">How It Works:</h2>
-            <p className="mt-4 text-gray-400 max-w-3xl mx-auto text-lg">
-              Mathx.ai combines state-of-the-art AI with Manim's stunning visualizations to bring your mathematical concepts to life
-            </p>
-          </motion.div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                className="flex flex-col items-center text-center p-6 bg-dark-300 rounded-xl border border-gray-800 shadow-lg hover:shadow-primary-900/20 transition-all duration-300 hover:-translate-y-1"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 * index }}
-              >
-                <div className="p-3 rounded-full bg-primary-900/30 mb-4">
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-400">
-                  {feature.description}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
       
       {/* Manim Showcase Section */}
       <section className="py-20 bg-gradient-to-b from-dark-200 to-dark-300">
