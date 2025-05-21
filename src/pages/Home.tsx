@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sparkles, Code, Wand2, Video } from 'lucide-react';
+import { Sparkles, Code, Wand2, Video, Layers, PenTool, Zap, BookOpen } from 'lucide-react';
 import heroVideo from '../assets/hero.mp4';
 
 const Home: React.FC = () => {
@@ -9,22 +9,45 @@ const Home: React.FC = () => {
     {
       icon: <Wand2 className="h-8 w-8 text-primary-400" />,
       title: 'AI-Powered Creation',
-      description: 'Simply describe your vision, and our advanced AI will transform it into stunning animations.',
+      description: 'Simply describe your vision, and our advanced AI will transform it into stunning Manim animations.',
     },
     {
       icon: <Code className="h-8 w-8 text-primary-400" />,
       title: 'Smart Generation',
-      description: 'Our AI understands complex concepts and generates beautiful visualizations automatically.',
+      description: 'Our AI understands complex mathematical concepts and generates beautiful visualizations using Manim.',
     },
     {
       icon: <Sparkles className="h-8 w-8 text-primary-400" />,
       title: 'Creative Freedom',
-      description: 'Create complex mathematical animations without any technical knowledge.',
+      description: 'Create complex mathematical animations without writing a single line of Manim code.',
     },
     {
       icon: <Video className="h-8 w-8 text-primary-400" />,
       title: 'Instant Results',
       description: 'Watch your ideas come to life with high-quality MP4 animations you can download and share.',
+    },
+  ];
+
+  const manimFeatures = [
+    {
+      icon: <Layers className="h-8 w-8 text-primary-400" />,
+      title: 'Mathematical Precision',
+      description: 'Manim creates mathematically accurate animations with perfect rendering of equations, graphs, and geometric shapes.',
+    },
+    {
+      icon: <PenTool className="h-8 w-8 text-primary-400" />,
+      title: 'Vector Graphics',
+      description: 'All animations are created as vector graphics, ensuring crystal-clear quality at any resolution.',
+    },
+    {
+      icon: <Zap className="h-8 w-8 text-primary-400" />,
+      title: 'Powerful Animations',
+      description: 'From simple transformations to complex calculus visualizations, Manim handles it all with smooth, professional animations.',
+    },
+    {
+      icon: <BookOpen className="h-8 w-8 text-primary-400" />,
+      title: '3Blue1Brown Legacy',
+      description: 'Created by Grant Sanderson for his popular YouTube channel, Manim is the gold standard for math animations.',
     },
   ];
 
@@ -44,7 +67,7 @@ const Home: React.FC = () => {
               transition={{ duration: 0.5 }}
             >
               Create Stunning Animations
-              <span className="block text-primary-400 mt-2">Powered by AI</span>
+              <span className="block text-primary-400 mt-2">Powered by AI & Manim</span>
             </motion.h1>
             
             <motion.p 
@@ -53,7 +76,7 @@ const Home: React.FC = () => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              Transform your ideas into beautiful mathmatical visualizations using cutting-edge AI technology. Start with free tokens - no coding required.
+              Transform your ideas into beautiful mathematical visualizations using cutting-edge AI technology and the powerful Manim animation engine. Start with free tokens - no coding required.
             </motion.p>
             
             <motion.div 
@@ -92,20 +115,26 @@ const Home: React.FC = () => {
       </section>
       
       {/* Features section */}
-      <section className="py-16 bg-dark-200">
+      <section className="py-20 bg-dark-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white">How It Works:</h2>
-            <p className="mt-4 text-gray-400 max-w-2xl mx-auto">
-              Mathx.ai combines state-of-the-art AI with stunning visualizations to bring your concepts to life
+          <motion.div 
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-white">How It Works:</h2>
+            <p className="mt-4 text-gray-400 max-w-3xl mx-auto text-lg">
+              Mathx.ai combines state-of-the-art AI with Manim's stunning visualizations to bring your mathematical concepts to life
             </p>
-          </div>
+          </motion.div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
-                className="flex flex-col items-center text-center p-6 bg-dark-300 rounded-xl border border-gray-800"
+                className="flex flex-col items-center text-center p-6 bg-dark-300 rounded-xl border border-gray-800 shadow-lg hover:shadow-primary-900/20 transition-all duration-300 hover:-translate-y-1"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 * index }}
@@ -125,17 +154,111 @@ const Home: React.FC = () => {
         </div>
       </section>
       
+      {/* Manim Showcase Section */}
+      <section className="py-20 bg-gradient-to-b from-dark-200 to-dark-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div 
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-white">
+              The Power of <span className="text-primary-400">Manim</span>
+            </h2>
+            <p className="mt-4 text-gray-400 max-w-3xl mx-auto text-lg">
+              Our platform leverages the incredible Manim animation engine, created by 3Blue1Brown's Grant Sanderson.
+              Manim is the gold standard for creating stunning mathematical animations.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+            {manimFeatures.map((feature, index) => (
+              <motion.div
+                key={index}
+                className="flex flex-col items-center text-center p-6 bg-dark-400/50 backdrop-blur-sm rounded-xl border border-primary-800/30 shadow-lg hover:shadow-primary-900/20 transition-all duration-300 hover:-translate-y-1"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.1 * index }}
+              >
+                <div className="p-3 rounded-full bg-primary-900/30 mb-4 ring-2 ring-primary-700/30">
+                  {feature.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-400">
+                  {feature.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div 
+            className="bg-dark-400/30 backdrop-blur-md rounded-2xl p-8 border border-primary-800/20 shadow-xl"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-4">What Can You Create With Manim?</h3>
+                <ul className="space-y-3 text-gray-300">
+                  <li className="flex items-start">
+                    <span className="text-primary-400 mr-2">•</span>
+                    <span>Complex mathematical concepts visualized step-by-step</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-primary-400 mr-2">•</span>
+                    <span>Beautiful geometric transformations and morphing shapes</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-primary-400 mr-2">•</span>
+                    <span>Calculus visualizations with derivatives and integrals</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-primary-400 mr-2">•</span>
+                    <span>Linear algebra demonstrations with vectors and matrices</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-primary-400 mr-2">•</span>
+                    <span>Probability and statistics animations with dynamic graphs</span>
+                  </li>
+                </ul>
+                <div className="mt-6">
+                  <Link to="/create" className="btn btn-primary px-6 py-3">
+                    Try It Now
+                  </Link>
+                </div>
+              </div>
+              <div className="relative rounded-xl overflow-hidden shadow-2xl border border-gray-800">
+                <div className="aspect-w-16 aspect-h-9 bg-gradient-to-br from-primary-900/50 to-primary-700/50 flex items-center justify-center">
+                  <div className="text-center p-8">
+                    <div className="text-6xl text-white font-bold mb-4">∫ e^x dx</div>
+                    <div className="text-2xl text-primary-300">= e^x + C</div>
+                  </div>
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-dark-900/80 to-transparent"></div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* CTA section */}
-      <section className="py-16 gradient-bg">
+      <section className="py-20 gradient-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-6">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             Start Creating with Free Tokens
           </h2>
-          <p className="text-lg text-gray-200 mb-8 max-w-2xl mx-auto">
-            No technical knowledge required. Just describe what you want to create, 
-            and let our AI bring your vision to life.
+          <p className="text-lg text-gray-200 mb-8 max-w-3xl mx-auto">
+            No technical knowledge of Manim or Python required. Just describe what you want to create, 
+            and let our AI bring your mathematical vision to life with professional-quality animations.
           </p>
-          <Link to="/create" className="btn bg-white text-primary-900 hover:bg-gray-100 px-8 py-3 text-lg font-medium">
+          <Link to="/create" className="btn bg-white text-primary-900 hover:bg-gray-100 px-8 py-3 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
             Start Creating Now
           </Link>
         </div>
