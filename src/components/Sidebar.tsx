@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
+import { getStoredUser } from '../lib/authBridge';
 import { 
   MessageSquarePlus, 
   Search, 
@@ -49,9 +50,41 @@ const CHAT_HISTORY: ChatHistory = {
   ]
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user: propUser }) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [user, setUser] = useState(propUser || getStoredUser());
+  
+  useEffect(() => {
+    // Update user when prop changes
+    if (propUser) {
+      setUser(propUser);
+    }
+    
+    // Check for user data on mount and when sidebar opens
+    const checkUser = () => {
+      const storedUser = getStoredUser();
+      if (storedUser && (!user || JSON.stringify(storedUser) !== JSON.stringify(user))) {
+        console.log('Sidebar: User data updated from storage');
+        setUser(storedUser);
+      }
+    };
+    
+    // Check when sidebar opens
+    if (isOpen) {
+      checkUser();
+    }
+    
+    // Also set up interval to check periodically while open
+    let interval: number | null = null;
+    if (isOpen) {
+      interval = window.setInterval(checkUser, 1000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isOpen, propUser, user]);
 
   // Filter chats based on search query
   const filteredChats = searchQuery.trim() ? 
