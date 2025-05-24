@@ -17,6 +17,7 @@ type User = {
   email: string;
   plan: string;
   avatar?: string;
+  tokens?: number;
 };
 
 type Chat = {
@@ -248,7 +249,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user }) => {
                       {user.email}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {user.plan}
+                      {user.plan} {user.tokens !== undefined && `• ${user.tokens} tokens`}
                     </p>
                   </div>
                 </div>
