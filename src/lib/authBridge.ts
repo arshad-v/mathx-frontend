@@ -25,7 +25,7 @@ export async function getBackendToken(session: Session | null): Promise<string |
     console.log('Using backend URL:', backendUrl);
     
     // Call the backend endpoint to verify the OAuth user and get a JWT token
-    // Include more user information to ensure proper identification
+    // IMPORTANT: The backend only expects email and supabaseId
     const response = await fetch(`${backendUrl}/api/auth/verify-oauth-user`, {
       method: 'POST',
       headers: {
@@ -34,12 +34,6 @@ export async function getBackendToken(session: Session | null): Promise<string |
       body: JSON.stringify({
         email: session.user?.email,
         supabaseId: session.user?.id,
-        provider: session.user?.app_metadata?.provider || 'google',
-        providerUserId: session.user?.identities?.[0]?.identity_data?.sub || session.user?.id,
-        name: session.user?.user_metadata?.full_name || session.user?.user_metadata?.name,
-        avatar: session.user?.user_metadata?.avatar_url,
-        accessToken: session.access_token,
-        sessionId: session.user?.id + '_' + Date.now(), // Add unique session identifier
       }),
     });
     
@@ -65,22 +59,17 @@ export async function getBackendToken(session: Session | null): Promise<string |
       console.log('Setting default 5 tokens for new user');
     }
     
-    // Store the backend token in localStorage with user ID to avoid conflicts
-    const userId = session.user?.id || 'unknown';
-    
+    // Store the backend token in localStorage
     // Clear any previous tokens to avoid conflicts
     localStorage.removeItem('backend_token');
     localStorage.removeItem('user');
     
-    // Store with user-specific keys
+    // Store the token and user data exactly as received from the backend
     localStorage.setItem('backend_token', data.token);
-    localStorage.setItem('current_user_id', userId);
-    localStorage.setItem('user', JSON.stringify({
-      ...data.user,
-      id: userId,
-      email: session.user?.email,
-      provider: session.user?.app_metadata?.provider || 'google',
-    }));
+    localStorage.setItem('user', JSON.stringify(data.user));
+    
+    // Store the Supabase ID for reference
+    localStorage.setItem('supabase_id', session.user?.id || 'unknown');
     
     console.log('Successfully stored backend token and user data for user:', session.user?.email);
     return data.token;
