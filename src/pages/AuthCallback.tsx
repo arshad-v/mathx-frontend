@@ -79,11 +79,16 @@ const AuthCallback: React.FC = () => {
                   console.log('Successfully got backend token');
                   // The authBridge will store the user and token in localStorage
                   
+                  // Log the authenticated user
+                  console.log('Authentication successful for:', data.session.user.email);
+                  
                   // Dispatch a custom event to notify the Layout component of auth change
                   window.dispatchEvent(new Event('auth-change'));
                   
                   // Force a hard redirect to ensure a clean state
-                  window.location.href = '/create';
+                  // Add a query parameter to help with debugging
+                  const userEmail = data.session.user.email || 'unknown';
+                  window.location.href = `/create?auth=success&user=${encodeURIComponent(userEmail)}`;
                   return;
                 } else {
                   console.error('Failed to get backend token for new session');
