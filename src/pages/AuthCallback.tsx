@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
-import { getBackendToken } from '../lib/authBridge';
+import { getBackendToken, dispatchAuthChangeEvent, AUTH_CHANGE_EVENT } from '../lib/authBridge';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -82,8 +82,8 @@ const AuthCallback: React.FC = () => {
                   // Log the authenticated user
                   console.log('Authentication successful for:', data.session.user.email);
                   
-                  // Dispatch a custom event to notify the Layout component of auth change
-                  window.dispatchEvent(new Event('auth-change'));
+                  // Dispatch the auth change event using our helper function
+                  dispatchAuthChangeEvent();
                   
                   // Force a hard redirect to ensure a clean state
                   // Add a query parameter to help with debugging
@@ -126,8 +126,8 @@ const AuthCallback: React.FC = () => {
                   console.log('Successfully got backend token');
                   // The authBridge will store the user and token in localStorage
                   
-                  // Dispatch a custom event to notify components of auth change
-                  window.dispatchEvent(new Event('auth-change'));
+                  // Dispatch the auth change event using our helper function
+                  dispatchAuthChangeEvent();
                   
                   // Force a hard redirect
                   window.location.href = '/create';
