@@ -195,13 +195,12 @@ const Home: React.FC = () => {
                   </Link>
                 </div>
               </div>
-              <div className="relative rounded-xl overflow-hidden shadow-2xl border border-gray-800">
+              <div>
                 <img 
                   src="https://i.postimg.cc/VkHqgV5C/Whats-App-Image-2025-05-24-at-19-25-44-cf174cfe.jpg" 
                   alt="Manim animation example" 
-                  className="w-full h-full object-cover"
+                  width="100%"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-dark-900/60 to-transparent"></div>
               </div>
             </div>
           </motion.div>
