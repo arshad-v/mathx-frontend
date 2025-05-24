@@ -198,7 +198,7 @@ const Home: React.FC = () => {
               <div className="relative rounded-xl overflow-hidden shadow-2xl border border-gray-800">
                 <div className="aspect-w-16 aspect-h-9 bg-gradient-to-br from-primary-900/50 to-primary-700/50 flex items-center justify-center">
                   <div className="text-center p-8">
-                    <div className="text-6xl text-white font-bold mb-4">∫ e^x dx</div>
+                    <div className="text-6xl text-white font-bold mb-4">∫ sdsdse^x dx</div>
                     <div className="text-2xl text-primary-300">= e^x + C</div>
                   </div>
                 </div>
