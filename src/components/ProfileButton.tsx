@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from 'lucide-react';
+import { getStoredUser } from '../lib/authBridge';
 
 interface ProfileButtonProps {
   onClick: () => void;
@@ -9,7 +10,33 @@ interface ProfileButtonProps {
   } | null;
 }
 
-const ProfileButton: React.FC<ProfileButtonProps> = ({ onClick, user }) => {
+const ProfileButton: React.FC<ProfileButtonProps> = ({ onClick, user: propUser }) => {
+  // Use local state to track user data
+  const [user, setUser] = useState(propUser || getStoredUser());
+  
+  useEffect(() => {
+    // Update user when prop changes
+    if (propUser) {
+      setUser(propUser);
+    }
+    
+    // Check for user data on mount and periodically
+    const checkUser = () => {
+      const storedUser = getStoredUser();
+      if (storedUser && (!user || JSON.stringify(storedUser) !== JSON.stringify(user))) {
+        console.log('ProfileButton: User data updated from storage');
+        setUser(storedUser);
+      }
+    };
+    
+    // Check immediately
+    checkUser();
+    
+    // And set up interval to check periodically
+    const interval = setInterval(checkUser, 1000);
+    
+    return () => clearInterval(interval);
+  }, [propUser, user]);
   if (!user) {
     return (
       <button
