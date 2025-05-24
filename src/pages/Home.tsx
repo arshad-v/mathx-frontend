@@ -199,7 +199,7 @@ const Home: React.FC = () => {
                 <div className="aspect-w-16 aspect-h-9 bg-gradient-to-br from-primary-900/50 to-primary-700/50 flex items-center justify-center">
                   <div className="flex items-center justify-center p-8">
                     <img
-                      src="https://i.postimg.cc/VkHqgV5C/Whats-App-Image-2025-05-24-at-19-25-44-cf174cfe.jpg"
+                      src="https://postimg.cc/bZkSNLxy"
                       alt="Integral of e^x"
                       className="max-w-full h-auto"
                       />
