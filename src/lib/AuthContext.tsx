@@ -173,19 +173,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
+      console.log('Starting Google login from AuthContext...');
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/create`,
+          redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: 'email profile',
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent',
+            prompt: 'select_account',
           }
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error initiating Google OAuth:', error);
+        throw error;
+      }
+      
+      console.log('Google OAuth flow initiated successfully');
+      // The redirect will happen automatically
     } catch (error) {
       console.error('Error signing in with Google:', error);
       setError(error instanceof Error ? error.message : 'Failed to sign in with Google');
