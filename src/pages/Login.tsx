@@ -57,21 +57,29 @@ const Login: React.FC = () => {
     setError('');
     
     try {
-      // Since we've configured the redirect URLs in Supabase dashboard,
-      // we can simply use the current origin with the callback path
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('Starting Google login process');
+      // Use the scopes parameter to request access to Google profile information
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: 'email profile',
+          queryParams: {
+            // Force re-authentication to ensure we get a fresh token
+            prompt: 'select_account'
+          }
         }
       });
       
       if (error) {
+        console.error('Google login error:', error);
         throw error;
       }
       
+      console.log('OAuth sign-in initiated, redirecting to Google');
       // The redirect will happen automatically through Supabase
     } catch (err) {
+      console.error('Failed to initiate Google login:', err);
       setError(err instanceof Error ? err.message : 'Google sign-in failed');
       setIsGoogleLoading(false);
     }
