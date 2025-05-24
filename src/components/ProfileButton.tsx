@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { User } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { getStoredUser, isAuthenticated, AUTH_CHANGE_EVENT } from '../lib/authBridge';
 
 interface ProfileButtonProps {
   onClick: () => void;
@@ -11,55 +9,7 @@ interface ProfileButtonProps {
   } | null;
 }
 
-interface User {
-  email?: string;
-  avatar_url?: string;
-  tokens?: number;
-  id?: string;
-}
-
-const ProfileButton: React.FC<ProfileButtonProps> = ({ onClick, user: propUser }) => {
-  // Use local state to track user data and authentication state
-  const [user, setUser] = useState(propUser || getStoredUser());
-  const [authenticated, setAuthenticated] = useState(isAuthenticated());
-  
-  useEffect(() => {
-    // Update user when prop changes
-    if (propUser) {
-      setUser(propUser);
-    }
-    
-    // Check for user data and auth state
-    const checkUserAndAuth = () => {
-      const storedUser = getStoredUser();
-      const authState = isAuthenticated();
-      
-      setAuthenticated(authState);
-      
-      if (storedUser && (!user || JSON.stringify(storedUser) !== JSON.stringify(user))) {
-        console.log('ProfileButton: User data updated from storage');
-        setUser(storedUser);
-      }
-    };
-    
-    checkUserAndAuth();
-    
-    // Listen for auth change events
-    const handleAuthChange = () => {
-      console.log('ProfileButton: Auth change event received');
-      checkUserAndAuth();
-    };
-    
-    window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
-    
-    // Set up interval to check for user data changes
-    const interval = setInterval(checkUserAndAuth, 5000);
-    
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
-    };
-  }, [propUser, user]);
+const ProfileButton: React.FC<ProfileButtonProps> = ({ onClick, user }) => {
   if (!user) {
     return (
       <button
