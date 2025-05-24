@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { getStoredUser } from '../lib/authBridge';
+import { getStoredUser, isAuthenticated, clearAuthData, AUTH_CHANGE_EVENT } from '../lib/authBridge';
 import { 
   MessageSquarePlus, 
   Search, 
@@ -54,6 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user: propUser }) =>
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [user, setUser] = useState(propUser || getStoredUser());
+  const [authenticated, setAuthenticated] = useState(isAuthenticated());
   
   useEffect(() => {
     // Update user when prop changes
@@ -61,9 +62,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user: propUser }) =>
       setUser(propUser);
     }
     
-    // Check for user data on mount and when sidebar opens
-    const checkUser = () => {
+    // Check for user data and auth state
+    const checkUserAndAuth = () => {
       const storedUser = getStoredUser();
+      const authState = isAuthenticated();
+      
+      console.log('Sidebar: Checking auth state:', authState);
+      console.log('Sidebar: Stored user:', storedUser);
+      
+      setAuthenticated(authState);
+      
       if (storedUser && (!user || JSON.stringify(storedUser) !== JSON.stringify(user))) {
         console.log('Sidebar: User data updated from storage');
         setUser(storedUser);
@@ -72,17 +80,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user: propUser }) =>
     
     // Check when sidebar opens
     if (isOpen) {
-      checkUser();
+      checkUserAndAuth();
     }
+    
+    // Listen for auth change events
+    const handleAuthChange = () => {
+      console.log('Sidebar: Auth change event received');
+      checkUserAndAuth();
+    };
+    
+    window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
     
     // Also set up interval to check periodically while open
     let interval: number | null = null;
     if (isOpen) {
-      interval = window.setInterval(checkUser, 1000);
+      interval = window.setInterval(checkUserAndAuth, 1000);
     }
     
     return () => {
       if (interval) clearInterval(interval);
+      window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
     };
   }, [isOpen, propUser, user]);
 
@@ -106,8 +123,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user: propUser }) =>
   };
 
   const handleSignOut = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    // Use the clearAuthData function to properly clear all auth data
+    clearAuthData();
     navigate('/login');
     onClose();
   };
@@ -269,7 +286,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user: propUser }) =>
             </div>
 
             {/* Profile Section */}
-            {user && (
+            {authenticated && user ? (
               <div className="p-3 border-t border-gray-800">
                 <div className="flex items-center space-x-2">
                   <img
@@ -282,10 +299,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user: propUser }) =>
                       {user.email}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {user.plan} {user.tokens !== undefined && `• ${user.tokens} tokens`}
+                      {user.tokens !== undefined && `${user.tokens} tokens`}
                     </p>
                   </div>
                 </div>
+              </div>
+            ) : (
+              <div className="p-3 border-t border-gray-800">
+                <Link 
+                  to="/login"
+                  className="w-full px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded flex items-center justify-center space-x-1.5 transition-colors text-sm"
+                  onClick={onClose}
+                >
+                  <span>Sign In</span>
+                </Link>
               </div>
             )}
           </motion.div>
