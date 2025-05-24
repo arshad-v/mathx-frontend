@@ -4,14 +4,15 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import Sidebar from './Sidebar';
 import ProfileButton from './ProfileButton';
-import { getStoredUser } from '../lib/authBridge';
+import { getStoredUser, isAuthenticated, AUTH_CHANGE_EVENT } from '../lib/authBridge';
 
 const Layout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
-  // State to store user data
+  // State to store user data and authentication state
   const [user, setUser] = useState(getStoredUser());
+  const [authenticated, setAuthenticated] = useState(isAuthenticated());
 
   // Effect to refresh user data when localStorage changes
   useEffect(() => {
@@ -29,30 +30,44 @@ const Layout: React.FC = () => {
 
     // Custom event for auth changes within the same window
     const handleAuthChange = () => {
-      console.log('Auth changed, updating user data');
-      setUser(getStoredUser());
+      console.log('Layout: Auth changed, updating user data');
+      const currentUser = getStoredUser();
+      const authState = isAuthenticated();
+      
+      setUser(currentUser);
+      setAuthenticated(authState);
+      
+      console.log('Layout: Updated auth state:', authState);
+      console.log('Layout: Updated user:', currentUser);
     };
 
-    window.addEventListener('auth-change', handleAuthChange);
+    window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
 
-    // Check for user data periodically
+    // Check for user data and auth state periodically
     const interval = setInterval(() => {
       const currentUser = getStoredUser();
+      const authState = isAuthenticated();
+      
+      if (authState !== authenticated) {
+        console.log('Layout: Auth state changed, updating', authState);
+        setAuthenticated(authState);
+      }
+      
       if (JSON.stringify(currentUser) !== JSON.stringify(user)) {
-        console.log('User data changed, updating');
+        console.log('Layout: User data changed, updating');
         setUser(currentUser);
       }
     }, 2000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('auth-change', handleAuthChange);
+      window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
       clearInterval(interval);
     };
   }, []);
 
   const handleProfileClick = () => {
-    if (user) {
+    if (authenticated && user) {
       setIsSidebarOpen(true);
     } else {
       navigate('/login');
