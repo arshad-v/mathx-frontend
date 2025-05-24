@@ -28,7 +28,7 @@ const Create: React.FC = () => {
     // Get the backend token from authBridge
     const token = getStoredBackendToken();
     const user = getStoredUser();
-    const userId = localStorage.getItem('current_user_id');
+    const supabaseId = localStorage.getItem('supabase_id');
     
     if (!token) {
       console.log('No backend token found, redirecting to login');
@@ -36,11 +36,8 @@ const Create: React.FC = () => {
       return;
     }
     
-    if (!userId) {
-      console.log('No user ID found, but token exists. Strange state.');
-      // We'll continue anyway since we have a token
-    } else {
-      console.log('Current user ID:', userId);
+    if (supabaseId) {
+      console.log('Authenticated with Supabase ID:', supabaseId);
     }
     
     if (user && typeof user.tokens !== 'undefined') {
