@@ -52,19 +52,29 @@ const Register: React.FC = () => {
     setError('');
     
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('Starting Google registration process');
+      // Use the scopes parameter to request access to Google profile information
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/create`
+          redirectTo: `${window.location.origin}/auth/callback`,
+          scopes: 'email profile',
+          queryParams: {
+            // Force re-authentication to ensure we get a fresh token
+            prompt: 'select_account'
+          }
         }
       });
       
       if (error) {
+        console.error('Google registration error:', error);
         throw error;
       }
       
+      console.log('OAuth sign-in initiated for registration, redirecting to Google');
       // The redirect will happen automatically through Supabase
     } catch (err) {
+      console.error('Failed to initiate Google registration:', err);
       setError(err instanceof Error ? err.message : 'Google sign-in failed');
       setIsGoogleLoading(false);
     }
