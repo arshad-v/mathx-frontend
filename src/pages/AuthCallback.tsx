@@ -20,64 +20,90 @@ const AuthCallback: React.FC = () => {
       console.log('Auth callback initiated, hash:', location.hash);
       
       try {
-        // First try to exchange the auth code for a session
-        // This is needed when the hash contains an access token
+        // First check if we already have a session
+        const { data: initialSession } = await supabase.auth.getSession();
+        
+        if (initialSession?.session) {
+          console.log('User already has a session:', initialSession.session.user.email);
+          // Store user session data
+          localStorage.setItem('user', JSON.stringify(initialSession.session.user));
+          // Store the access token as 'token' for compatibility with the Create page
+          localStorage.setItem('token', initialSession.session.access_token);
+          
+          // Force a hard redirect to the create page to ensure a clean state
+          window.location.href = '/create';
+          return;
+        }
+        
+        // Process the hash if it exists
         if (location.hash) {
+          console.log('Processing hash parameters');
           const hashParams = new URLSearchParams(location.hash.substring(1));
           if (hashParams.has('access_token')) {
-            console.log('Found access token in URL, setting session');
+            console.log('Found access token in URL');
             
-            // The session should be automatically set by Supabase client
-            // when it detects the hash parameters
+            // Wait a moment for Supabase to process the hash
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Now check for session again
+            const { data, error } = await supabase.auth.getSession();
+            
+            if (error) {
+              console.error('Error getting session after hash processing:', error);
+              throw error;
+            }
+            
+            if (data?.session) {
+              // Store user session data
+              localStorage.setItem('user', JSON.stringify(data.session.user));
+              // Store the access token as 'token' for compatibility with the Create page
+              localStorage.setItem('token', data.session.access_token);
+              console.log('Authentication successful, user:', data.session.user.email);
+              
+              // Force a hard redirect to ensure a clean state
+              window.location.href = '/create';
+              return;
+            }
           }
         }
         
-        // Now get the session
-        const { data, error } = await supabase.auth.getSession();
+        // If we get here, try one more time with a longer delay
+        console.log('No session found yet, trying one more time after delay');
         
-        if (error) {
-          console.error('Error getting session:', error);
-          throw error;
-        }
-        
-        if (data?.session) {
-          // Store user session data
-          localStorage.setItem('user', JSON.stringify(data.session.user));
-          console.log('Authentication successful, user:', data.session.user.email);
-          
-          // Redirect to create page after successful authentication
-          setTimeout(() => {
-            navigate('/create');
-          }, 500);
-        } else {
-          // If no session, try to exchange the code for a session
-          console.log('No session found, checking for code exchange');
-          
-          // Try to get the session one more time after a short delay
-          // This gives Supabase client time to process the hash
-          setTimeout(async () => {
-            const { data: retryData, error: retryError } = await supabase.auth.getSession();
+        setTimeout(async () => {
+          try {
+            const { data: finalAttempt, error: finalError } = await supabase.auth.getSession();
             
-            if (retryError) {
-              console.error('Retry error:', retryError);
-              throw retryError;
+            if (finalError) {
+              console.error('Final attempt error:', finalError);
+              throw finalError;
             }
             
-            if (retryData?.session) {
-              localStorage.setItem('user', JSON.stringify(retryData.session.user));
-              console.log('Retry successful, user:', retryData.session.user.email);
-              navigate('/create');
+            if (finalAttempt?.session) {
+              localStorage.setItem('user', JSON.stringify(finalAttempt.session.user));
+              // Store the access token as 'token' for compatibility with the Create page
+              localStorage.setItem('token', finalAttempt.session.access_token);
+              console.log('Final attempt successful, user:', finalAttempt.session.user.email);
+              
+              // Force a hard redirect
+              window.location.href = '/create';
             } else {
               // If still no session, something went wrong
-              setError('Authentication failed. No session found after retry.');
-              setTimeout(() => navigate('/login'), 3000);
+              console.error('Authentication failed. No session found after multiple attempts.');
+              setError('Authentication failed. Please try again.');
+              setTimeout(() => window.location.href = '/login', 2000);
             }
-          }, 1000);
-        }
+          } catch (retryErr) {
+            console.error('Final attempt error:', retryErr);
+            setError(retryErr instanceof Error ? retryErr.message : 'Authentication failed');
+            setTimeout(() => window.location.href = '/login', 2000);
+          }
+        }, 1500);
+        
       } catch (err) {
         console.error('Auth callback error:', err);
         setError(err instanceof Error ? err.message : 'Authentication failed');
-        setTimeout(() => navigate('/login'), 3000);
+        setTimeout(() => window.location.href = '/login', 2000);
       } finally {
         setProcessing(false);
       }
