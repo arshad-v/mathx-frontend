@@ -18,14 +18,30 @@ const AuthCallback: React.FC = () => {
     const handleAuthCallback = async () => {
       setProcessing(true);
       console.log('Auth callback initiated, hash:', location.hash);
+      
       try {
-        // Get the session from URL
+        // First try to exchange the auth code for a session
+        // This is needed when the hash contains an access token
+        if (location.hash) {
+          const hashParams = new URLSearchParams(location.hash.substring(1));
+          if (hashParams.has('access_token')) {
+            console.log('Found access token in URL, setting session');
+            
+            // The session should be automatically set by Supabase client
+            // when it detects the hash parameters
+          }
+        }
+        
+        // Now get the session
         const { data, error } = await supabase.auth.getSession();
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error getting session:', error);
+          throw error;
+        }
         
         if (data?.session) {
-          // Store user session data if needed
+          // Store user session data
           localStorage.setItem('user', JSON.stringify(data.session.user));
           console.log('Authentication successful, user:', data.session.user.email);
           
@@ -34,9 +50,29 @@ const AuthCallback: React.FC = () => {
             navigate('/create');
           }, 500);
         } else {
-          // If no session, something went wrong
-          setError('Authentication failed. No session found.');
-          setTimeout(() => navigate('/login'), 3000);
+          // If no session, try to exchange the code for a session
+          console.log('No session found, checking for code exchange');
+          
+          // Try to get the session one more time after a short delay
+          // This gives Supabase client time to process the hash
+          setTimeout(async () => {
+            const { data: retryData, error: retryError } = await supabase.auth.getSession();
+            
+            if (retryError) {
+              console.error('Retry error:', retryError);
+              throw retryError;
+            }
+            
+            if (retryData?.session) {
+              localStorage.setItem('user', JSON.stringify(retryData.session.user));
+              console.log('Retry successful, user:', retryData.session.user.email);
+              navigate('/create');
+            } else {
+              // If still no session, something went wrong
+              setError('Authentication failed. No session found after retry.');
+              setTimeout(() => navigate('/login'), 3000);
+            }
+          }, 1000);
         }
       } catch (err) {
         console.error('Auth callback error:', err);
@@ -48,7 +84,7 @@ const AuthCallback: React.FC = () => {
     };
 
     handleAuthCallback();
-  }, [navigate]);
+  }, [navigate, location]);
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center p-6">
