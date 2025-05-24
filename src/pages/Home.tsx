@@ -198,12 +198,13 @@ const Home: React.FC = () => {
               <div className="relative rounded-xl overflow-hidden shadow-2xl border border-gray-800">
                 <div className="aspect-w-16 aspect-h-9 bg-gradient-to-br from-primary-900/50 to-primary-700/50 flex items-center justify-center">
                   <div className="flex items-center justify-center p-8">
-                    <img
-                      src="https://i.postimg.cc/13gnm558/Whats-App-Image-2025-05-24-at-19-25-44-fb91fd25.jpg"
-                      alt="Integral of e^x"
-                      className="max-w-full h-auto"
-                      />
-                  </div>
+  <img
+    src="https://i.postimg.cc/13gnm558/Whats-App-Image-2025-05-24-at-19-25-44-fb91fd25.jpg"
+    alt="Mathematical Visualization"
+    className="max-w-full h-auto rounded-lg shadow-lg"
+  />
+</div>
+
 
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-dark-900/80 to-transparent"></div>
