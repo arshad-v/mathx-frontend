@@ -3,6 +3,15 @@ import { Session } from '@supabase/supabase-js';
 // Default to localhost:3000 if no backend URL is provided
 const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://manim-ai-backend-943004966625.asia-south1.run.app';
 
+// Define a custom event for auth changes
+export const AUTH_CHANGE_EVENT = 'auth-state-change';
+
+// Dispatch auth change event
+export function dispatchAuthChangeEvent() {
+  console.log('Dispatching auth change event');
+  window.dispatchEvent(new CustomEvent(AUTH_CHANGE_EVENT));
+}
+
 /**
  * Converts a Supabase session to a JWT token for the backend
  */
@@ -71,6 +80,12 @@ export async function getBackendToken(session: Session | null): Promise<string |
     // Store the Supabase ID for reference
     localStorage.setItem('supabase_id', session.user?.id || 'unknown');
     
+    // Set auth state to true
+    localStorage.setItem('is_authenticated', 'true');
+    
+    // Dispatch auth change event
+    dispatchAuthChangeEvent();
+    
     console.log('Successfully stored backend token and user data for user:', session.user?.email);
     return data.token;
   } catch (error) {
@@ -107,4 +122,16 @@ export function getStoredUser(): any {
 export function clearAuthData(): void {
   localStorage.removeItem('backend_token');
   localStorage.removeItem('user');
+  localStorage.removeItem('supabase_id');
+  localStorage.removeItem('is_authenticated');
+  
+  // Dispatch auth change event
+  dispatchAuthChangeEvent();
+}
+
+/**
+ * Checks if the user is authenticated
+ */
+export function isAuthenticated(): boolean {
+  return localStorage.getItem('is_authenticated') === 'true' && !!getStoredBackendToken();
 }
