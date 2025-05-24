@@ -158,59 +158,58 @@ const Home: React.FC = () => {
           </div>
 
           <motion.div 
-            className="bg-dark-400/30 backdrop-blur-md rounded-2xl p-8 border border-primary-800/20 shadow-xl"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-4">What Can You Create With Manim?</h3>
-                <ul className="space-y-3 text-gray-300">
-                  <li className="flex items-start">
-                    <span className="text-primary-400 mr-2">•</span>
-                    <span>Complex mathematical concepts visualized step-by-step</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-primary-400 mr-2">•</span>
-                    <span>Beautiful geometric transformations and morphing shapes</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-primary-400 mr-2">•</span>
-                    <span>Calculus visualizations with derivatives and integrals</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-primary-400 mr-2">•</span>
-                    <span>Linear algebra demonstrations with vectors and matrices</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-primary-400 mr-2">•</span>
-                    <span>Probability and statistics animations with dynamic graphs</span>
-                  </li>
-                </ul>
-                <div className="mt-6">
-                  <Link to="/create" className="btn btn-primary px-6 py-3">
-                    Try It Now
-                  </Link>
-                </div>
-              </div>
-              <div className="relative rounded-xl overflow-hidden shadow-2xl border border-gray-800">
-                <div className="aspect-w-16 aspect-h-9 bg-gradient-to-br from-primary-900/50 to-primary-700/50 flex items-center justify-center">
-                  <div className="flex items-center justify-center p-8">
-  <img
-    src="https://i.postimg.cc/13gnm558/Whats-App-Image-2025-05-24-at-19-25-44-fb91fd25.jpg"
-    alt="Mathematical Visualization"
-    className="max-w-full h-auto rounded-lg shadow-lg"
-  />
-</div>
+  className="bg-dark-400/30 backdrop-blur-md rounded-2xl p-8 border border-primary-800/20 shadow-xl"
+  initial={{ opacity: 0 }}
+  whileInView={{ opacity: 1 }}
+  viewport={{ once: true }}
+  transition={{ duration: 0.7 }}
+>
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+    <div>
+      <h3 className="text-2xl font-bold text-white mb-4">What Can You Create With Manim?</h3>
+      <ul className="space-y-3 text-gray-300">
+        <li className="flex items-start">
+          <span className="text-primary-400 mr-2">•</span>
+          <span>Complex mathematical concepts visualized step-by-step</span>
+        </li>
+        <li className="flex items-start">
+          <span className="text-primary-400 mr-2">•</span>
+          <span>Beautiful geometric transformations and morphing shapes</span>
+        </li>
+        <li className="flex items-start">
+          <span className="text-primary-400 mr-2">•</span>
+          <span>Calculus visualizations with derivatives and integrals</span>
+        </li>
+        <li className="flex items-start">
+          <span className="text-primary-400 mr-2">•</span>
+          <span>Linear algebra demonstrations with vectors and matrices</span>
+        </li>
+        <li className="flex items-start">
+          <span className="text-primary-400 mr-2">•</span>
+          <span>Probability and statistics animations with dynamic graphs</span>
+        </li>
+      </ul>
+      <div className="mt-6">
+        <Link to="/create" className="btn btn-primary px-6 py-3">
+          Try It Now
+        </Link>
+      </div>
+    </div>
 
+    {/* 🖼️ Replaced math text with image */}
+    <div className="relative rounded-xl overflow-hidden shadow-2xl border border-gray-800">
+      <div className="aspect-w-16 aspect-h-9 relative">
+        <img
+          src="https://i.postimg.cc/13gnm558/Whats-App-Image-2025-05-24-at-19-25-44-fb91fd25.jpg"
+          alt="Mathematical Visualization"
+          className="absolute inset-0 w-full h-full object-cover rounded-xl"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-dark-900/80 to-transparent rounded-xl"></div>
+      </div>
+    </div>
+  </div>
+</motion.div>
 
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-dark-900/80 to-transparent"></div>
-              </div>
-            </div>
-          </motion.div>
         </div>
       </section>
 
