@@ -79,6 +79,9 @@ const AuthCallback: React.FC = () => {
                   console.log('Successfully got backend token');
                   // The authBridge will store the user and token in localStorage
                   
+                  // Dispatch a custom event to notify the Layout component of auth change
+                  window.dispatchEvent(new Event('auth-change'));
+                  
                   // Force a hard redirect to ensure a clean state
                   window.location.href = '/create';
                   return;
@@ -117,6 +120,9 @@ const AuthCallback: React.FC = () => {
                 if (backendToken) {
                   console.log('Successfully got backend token');
                   // The authBridge will store the user and token in localStorage
+                  
+                  // Dispatch a custom event to notify components of auth change
+                  window.dispatchEvent(new Event('auth-change'));
                   
                   // Force a hard redirect
                   window.location.href = '/create';
