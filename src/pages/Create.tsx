@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Loader, Play, Download, Coins } from 'lucide-react';
 import PromptForm from '../components/PromptForm';
 import VideoPlayer from '../components/VideoPlayer';
+import { getStoredBackendToken, getStoredUser } from '../lib/authBridge';
 
 type Status = 'idle' | 'generating' | 'complete' | 'error';
 
@@ -24,23 +25,45 @@ const Create: React.FC = () => {
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    // Get the backend token from authBridge
+    const token = getStoredBackendToken();
+    const user = getStoredUser();
+    
     if (!token) {
+      console.log('No backend token found, redirecting to login');
       navigate('/login');
       return;
     }
+    
+    if (user && typeof user.tokens !== 'undefined') {
+      // If we already have the user with tokens in localStorage, use that
+      console.log('Using tokens from stored user:', user.tokens);
+      setTokens(user.tokens);
+    }
 
-    // Fetch user tokens
+    // Fetch user tokens from backend
+    console.log('Fetching tokens from backend');
     fetch(`${backendUrl}/api/user/tokens`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
     })
-      .then(res => res.json())
-      .then(data => setTokens(data.tokens))
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Failed to fetch tokens: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        console.log('Tokens fetched successfully:', data);
+        setTokens(data.tokens);
+      })
       .catch(err => {
         console.error('Error fetching tokens:', err);
-        setError('Failed to fetch tokens');
+        // If we have tokens from the stored user, don't show an error
+        if (!(user && typeof user.tokens !== 'undefined')) {
+          setError('Failed to fetch tokens');
+        }
       });
 
     // Check server health
@@ -57,8 +80,9 @@ const Create: React.FC = () => {
       return;
     }
 
-    const token = localStorage.getItem('token');
+    const token = getStoredBackendToken();
     if (!token) {
+      console.log('No backend token found, redirecting to login');
       navigate('/login');
       return;
     }
