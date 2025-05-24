@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { getStoredUser, isAuthenticated, clearAuthData, AUTH_CHANGE_EVENT } from '../lib/authBridge';
 import { 
   MessageSquarePlus, 
   Search, 
@@ -18,7 +17,6 @@ type User = {
   email: string;
   plan: string;
   avatar?: string;
-  tokens?: number;
 };
 
 type Chat = {
@@ -50,58 +48,9 @@ const CHAT_HISTORY: ChatHistory = {
   ]
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user: propUser }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user }) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [user, setUser] = useState(propUser || getStoredUser());
-  const [authenticated, setAuthenticated] = useState(isAuthenticated());
-  
-  useEffect(() => {
-    // Update user when prop changes
-    if (propUser) {
-      setUser(propUser);
-    }
-    
-    // Check for user data and auth state
-    const checkUserAndAuth = () => {
-      const storedUser = getStoredUser();
-      const authState = isAuthenticated();
-      
-      console.log('Sidebar: Checking auth state:', authState);
-      console.log('Sidebar: Stored user:', storedUser);
-      
-      setAuthenticated(authState);
-      
-      if (storedUser && (!user || JSON.stringify(storedUser) !== JSON.stringify(user))) {
-        console.log('Sidebar: User data updated from storage');
-        setUser(storedUser);
-      }
-    };
-    
-    // Check when sidebar opens
-    if (isOpen) {
-      checkUserAndAuth();
-    }
-    
-    // Listen for auth change events
-    const handleAuthChange = () => {
-      console.log('Sidebar: Auth change event received');
-      checkUserAndAuth();
-    };
-    
-    window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
-    
-    // Also set up interval to check periodically while open
-    let interval: number | null = null;
-    if (isOpen) {
-      interval = window.setInterval(checkUserAndAuth, 1000);
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-      window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
-    };
-  }, [isOpen, propUser, user]);
 
   // Filter chats based on search query
   const filteredChats = searchQuery.trim() ? 
@@ -123,8 +72,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user: propUser }) =>
   };
 
   const handleSignOut = () => {
-    // Use the clearAuthData function to properly clear all auth data
-    clearAuthData();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     navigate('/login');
     onClose();
   };
@@ -286,7 +235,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user: propUser }) =>
             </div>
 
             {/* Profile Section */}
-            {authenticated && user ? (
+            {user && (
               <div className="p-3 border-t border-gray-800">
                 <div className="flex items-center space-x-2">
                   <img
@@ -299,20 +248,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user: propUser }) =>
                       {user.email}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {user.tokens !== undefined && `${user.tokens} tokens`}
+                      {user.plan}
                     </p>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="p-3 border-t border-gray-800">
-                <Link 
-                  to="/login"
-                  className="w-full px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded flex items-center justify-center space-x-1.5 transition-colors text-sm"
-                  onClick={onClose}
-                >
-                  <span>Sign In</span>
-                </Link>
               </div>
             )}
           </motion.div>
