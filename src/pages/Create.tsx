@@ -52,19 +52,73 @@ const Create: React.FC = () => {
         
         // Fetch user tokens directly from Supabase table
         try {
-          // Get the user's ID from Supabase
+          // Get the user's ID and email from Supabase
           const authId = data.session.user.id;
-          console.log('Current user ID:', authId);
+          const userEmail = data.session.user.email || '';
+          console.log('Current user ID:', authId, 'Email:', userEmail);
           
-          // Query the users table to get tokens for this user
-          // Try both id and oauth_id fields since we don't know which one is used for this user
-          const { data: userData, error: userError } = await supabase
+          // First check if user exists with id matching auth ID
+          let { data: userData, error: userError } = await supabase
             .from('users')
-            .select('tokens')
-            .or(`id.eq.${authId},oauth_id.eq.${authId}`)
-            .single();
+            .select('id, email, tokens')
+            .eq('id', authId)
+            .maybeSingle();
+          
+          // If not found by id, try oauth_id
+          if (!userData && userError?.code === 'PGRST116') {
+            console.log('User not found by id, trying oauth_id');
+            const { data: oauthUserData, error: oauthError } = await supabase
+              .from('users')
+              .select('id, email, tokens')
+              .eq('oauth_id', authId)
+              .maybeSingle();
+              
+            userData = oauthUserData;
+            userError = oauthError;
+          }
           
           console.log('User data query result:', userData, userError);
+          
+          // If user still not found, create a new user record
+          if (!userData && (userError?.code === 'PGRST116' || userError?.message.includes('no rows'))) {
+            console.log('User not found in database, creating new user record');
+            
+            // Determine if this is an OAuth user (Google) or email user
+            const isOAuthUser = data.session.user.app_metadata?.provider === 'google';
+            
+            // Create new user record
+            const newUser: { 
+              email: string; 
+              tokens: number; 
+              created_at: string; 
+              id?: string; 
+              oauth_id?: string; 
+            } = {
+              email: userEmail,
+              tokens: 5, // Default starting tokens
+              created_at: new Date().toISOString()
+            };
+            
+            if (isOAuthUser) {
+              // For OAuth users, store auth ID in oauth_id field
+              newUser.oauth_id = authId;
+            } else {
+              // For email users, use auth ID as primary id
+              newUser.id = authId;
+            }
+            
+            const { data: insertedUser, error: insertError } = await supabase
+              .from('users')
+              .insert([newUser])
+              .select();
+              
+            if (insertError) {
+              console.error('Error creating new user record:', insertError);
+            } else {
+              console.log('Created new user record:', insertedUser);
+              userData = insertedUser[0];
+            }
+          }
           
           if (userError) {
             console.error('Error fetching user tokens from Supabase:', userError);
@@ -150,18 +204,63 @@ const Create: React.FC = () => {
         const authId = data.session.user.id;
         console.log('Updating tokens for user ID:', authId);
         
-        // First try to find the user to determine which field to use
-        const { data: findUser, error: findError } = await supabase
+        // First check if user exists with id matching auth ID
+        let { data: findUser, error: findError } = await supabase
           .from('users')
           .select('id, oauth_id')
-          .or(`id.eq.${authId},oauth_id.eq.${authId}`)
-          .single();
+          .eq('id', authId)
+          .maybeSingle();
           
+        // If not found by id, try oauth_id
+        if (!findUser && findError?.code === 'PGRST116') {
+          console.log('User not found by id for update, trying oauth_id');
+          const { data: oauthUser, error: oauthError } = await supabase
+            .from('users')
+            .select('id, oauth_id')
+            .eq('oauth_id', authId)
+            .maybeSingle();
+            
+          findUser = oauthUser;
+          findError = oauthError;
+        }
+        
         console.log('Found user for update:', findUser, findError);
         
-        if (findError) {
-          console.error('Error finding user for token update:', findError);
-          return;
+        // If user still not found, create a new user record
+        if (!findUser) {
+          console.log('User not found for token update, creating new record');
+          const userEmail = data.session.user.email || '';
+          const isOAuthUser = data.session.user.app_metadata?.provider === 'google';
+          
+          const newUser: { 
+            email: string; 
+            tokens: number; 
+            created_at: string; 
+            id?: string; 
+            oauth_id?: string; 
+          } = {
+            email: userEmail,
+            tokens: responseData.remainingTokens, // Use the remaining tokens from response
+            created_at: new Date().toISOString()
+          };
+          
+          if (isOAuthUser) {
+            newUser.oauth_id = authId;
+          } else {
+            newUser.id = authId;
+          }
+          
+          const { data: insertedUser, error: insertError } = await supabase
+            .from('users')
+            .insert([newUser])
+            .select();
+            
+          if (insertError) {
+            console.error('Error creating new user record during token update:', insertError);
+          } else {
+            console.log('Created new user record with updated tokens:', insertedUser);
+          }
+          return; // Exit since we've already set the tokens in the new record
         }
         
         // Determine which field to use for the update
