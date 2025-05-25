@@ -93,7 +93,8 @@ const Create: React.FC = () => {
             
             if (token) {
               console.log('Attempting to create user via backend API');
-              const response = await fetch(`${backendUrl}/api/auth/create-user`, {
+              // Use the existing register endpoint instead of a non-existent create-user endpoint
+              const response = await fetch(`${backendUrl}/api/auth/register`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -101,8 +102,8 @@ const Create: React.FC = () => {
                 },
                 body: JSON.stringify({
                   email: userEmail,
-                  authId: authId,
-                  isOAuth: isOAuthUser
+                  password: data.session.access_token.substring(0, 20), // Use part of the token as a password
+                  tokens: 5 // Default starting tokens
                 })
               });
               
@@ -137,7 +138,7 @@ const Create: React.FC = () => {
             const backendToken = localStorage.getItem('token');
             if (backendToken) {
               console.log('Using existing backend token from localStorage');
-              const response = await fetch(`${backendUrl}/api/user`, {
+              const response = await fetch(`${backendUrl}/api/user/tokens`, {
                 headers: {
                   'Authorization': `Bearer ${backendToken}`
                 }
@@ -253,16 +254,16 @@ const Create: React.FC = () => {
             const token = localStorage.getItem('token') || data.session.access_token;
             if (token) {
               console.log('Attempting to update tokens via backend API');
-              const response = await fetch(`${backendUrl}/api/user/update-tokens`, {
-                method: 'POST',
+              // Use the existing tokens endpoint
+              const response = await fetch(`${backendUrl}/api/user/tokens`, {
+                // Using PUT method for updating tokens
+                method: 'PUT',
                 headers: {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                  tokens: responseData.remainingTokens,
-                  authId: authId,
-                  isOAuth: data.session.user.app_metadata?.provider === 'google'
+                  tokens: responseData.remainingTokens
                 })
               });
               
