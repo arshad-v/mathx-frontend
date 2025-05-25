@@ -52,15 +52,19 @@ const Create: React.FC = () => {
         
         // Fetch user tokens directly from Supabase table
         try {
-          // Get the user's auth_id from Supabase
+          // Get the user's ID from Supabase
           const authId = data.session.user.id;
+          console.log('Current user ID:', authId);
           
           // Query the users table to get tokens for this user
+          // Try both id and oauth_id fields since we don't know which one is used for this user
           const { data: userData, error: userError } = await supabase
             .from('users')
             .select('tokens')
-            .eq('auth_id', authId)
+            .or(`id.eq.${authId},oauth_id.eq.${authId}`)
             .single();
+          
+          console.log('User data query result:', userData, userError);
           
           if (userError) {
             console.error('Error fetching user tokens from Supabase:', userError);
@@ -144,13 +148,42 @@ const Create: React.FC = () => {
       // Also update tokens in Supabase table
       try {
         const authId = data.session.user.id;
-        const { error: updateError } = await supabase
+        console.log('Updating tokens for user ID:', authId);
+        
+        // First try to find the user to determine which field to use
+        const { data: findUser, error: findError } = await supabase
           .from('users')
-          .update({ tokens: responseData.remainingTokens })
-          .eq('auth_id', authId);
+          .select('id, oauth_id')
+          .or(`id.eq.${authId},oauth_id.eq.${authId}`)
+          .single();
           
+        console.log('Found user for update:', findUser, findError);
+        
+        if (findError) {
+          console.error('Error finding user for token update:', findError);
+          return;
+        }
+        
+        // Determine which field to use for the update
+        let updateQuery;
+        if (findUser.id === authId) {
+          updateQuery = supabase
+            .from('users')
+            .update({ tokens: responseData.remainingTokens })
+            .eq('id', authId);
+        } else {
+          updateQuery = supabase
+            .from('users')
+            .update({ tokens: responseData.remainingTokens })
+            .eq('oauth_id', authId);
+        }
+        
+        const { error: updateError } = await updateQuery;
+        
         if (updateError) {
           console.error('Error updating tokens in Supabase:', updateError);
+        } else {
+          console.log('Successfully updated tokens to:', responseData.remainingTokens);
         }
       } catch (updateErr) {
         console.error('Failed to update tokens in Supabase:', updateErr);
