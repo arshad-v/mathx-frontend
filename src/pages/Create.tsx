@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Loader, Play, Download, Coins } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
 import PromptForm from '../components/PromptForm';
 import VideoPlayer from '../components/VideoPlayer';
-import { getStoredBackendToken, getStoredUser } from '../lib/authBridge';
 
 type Status = 'idle' | 'generating' | 'complete' | 'error';
 
@@ -22,54 +22,70 @@ const Create: React.FC = () => {
   const [tokens, setTokens] = useState<number>(0);
   const [serverAvailable, setServerAvailable] = useState(true);
 
+  // Initialize Supabase client
+  const supabaseUrl = import.meta.env.SUPABASE_URL || 'https://iaioivhibyazmntdiadn.supabase.co';
+  const supabaseAnonKey = import.meta.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhaW9pdmhpYnlhem1udGRpYWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwMjg3MjIsImV4cCI6MjA2MjYwNDcyMn0.2yYZQp_FgMso3noCFAT7mwlFZ-ab7xB6E4IQ0UaJkzE';
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
-    // Get the backend token from authBridge
-    const token = getStoredBackendToken();
-    const user = getStoredUser();
-    const supabaseId = localStorage.getItem('supabase_id');
-    
-    if (!token) {
-      console.log('No backend token found, redirecting to login');
-      navigate('/login');
-      return;
-    }
-    
-    if (supabaseId) {
-      console.log('Authenticated with Supabase ID:', supabaseId);
-    }
-    
-    if (user && typeof user.tokens !== 'undefined') {
-      // If we already have the user with tokens in localStorage, use that
-      console.log('Using tokens from stored user:', user.tokens, 'for user:', user.email);
-      setTokens(user.tokens);
-    }
-
-    // Fetch user tokens from backend
-    console.log('Fetching tokens from backend');
-    fetch(`${backendUrl}/api/user/tokens`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`Failed to fetch tokens: ${res.status}`);
+    async function initializeData() {
+      try {
+        // Get session from Supabase
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error || !data.session) {
+          console.error('No active session:', error);
+          navigate('/login');
+          return;
         }
-        return res.json();
-      })
-      .then(data => {
-        console.log('Tokens fetched successfully:', data);
-        setTokens(data.tokens);
-      })
-      .catch(err => {
-        console.error('Error fetching tokens:', err);
-        // If we have tokens from the stored user, don't show an error
-        if (!(user && typeof user.tokens !== 'undefined')) {
+        
+        // We have a valid session, store the token for API calls
+        const token = data.session.access_token;
+        localStorage.setItem('token', token);
+        
+        // Fetch user tokens directly from Supabase table
+        try {
+          // Get the user's auth_id from Supabase
+          const authId = data.session.user.id;
+          
+          // Query the users table to get tokens for this user
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('tokens')
+            .eq('auth_id', authId)
+            .single();
+          
+          if (userError) {
+            console.error('Error fetching user tokens from Supabase:', userError);
+            
+            // Fallback to API if Supabase query fails
+            const response = await fetch(`${backendUrl}/api/user/tokens`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            const tokenData = await response.json();
+            setTokens(tokenData.tokens);
+          } else if (userData) {
+            console.log('Successfully fetched tokens from Supabase:', userData.tokens);
+            setTokens(userData.tokens);
+          } else {
+            console.warn('User found in auth but not in users table');
+            setTokens(0);
+          }
+        } catch (tokenErr) {
+          console.error('Error fetching tokens:', tokenErr);
           setError('Failed to fetch tokens');
         }
-      });
+      } catch (err) {
+        console.error('Error checking authentication:', err);
+        navigate('/login');
+      }
+    }
+    
+    initializeData();
 
     // Check server health
     fetch(`${backendUrl}/health`)
@@ -85,12 +101,15 @@ const Create: React.FC = () => {
       return;
     }
 
-    const token = getStoredBackendToken();
-    if (!token) {
-      console.log('No backend token found, redirecting to login');
+    // Get the current session token
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session) {
+      console.error('No active session:', error);
       navigate('/login');
       return;
     }
+    
+    const token = data.session.access_token;
 
     setPrompt(inputPrompt);
     setStatus('generating');
@@ -111,9 +130,27 @@ const Create: React.FC = () => {
         throw new Error(errorData.message || 'Failed to generate animation');
       }
       
-      const data = await response.json();
-      setResult(data);
-      setTokens(data.remainingTokens);
+      const responseData = await response.json();
+      setResult(responseData);
+      
+      // Update tokens in state
+      setTokens(responseData.remainingTokens);
+      
+      // Also update tokens in Supabase table
+      try {
+        const authId = data.session.user.id;
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({ tokens: responseData.remainingTokens })
+          .eq('auth_id', authId);
+          
+        if (updateError) {
+          console.error('Error updating tokens in Supabase:', updateError);
+        }
+      } catch (updateErr) {
+        console.error('Failed to update tokens in Supabase:', updateErr);
+      }
+      
       setStatus('complete');
     } catch (err) {
       console.error('Error generating animation:', err);
