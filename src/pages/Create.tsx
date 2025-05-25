@@ -36,7 +36,12 @@ const Create: React.FC = () => {
         const { data, error } = await supabase.auth.getSession();
         
         if (error || !data.session) {
-          console.error('No active session:', error);
+          // Only log detailed errors that aren't the expected 'Auth session missing' error
+          if (error && error.message !== 'Auth session missing!') {
+            console.error('Authentication error:', error);
+          } else {
+            console.log('No active session, redirecting to login');
+          }
           navigate('/login');
           return;
         }
