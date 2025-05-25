@@ -25,7 +25,10 @@ const Layout: React.FC = () => {
         const { data, error } = await supabase.auth.getUser();
 
         if (error) {
-          console.error('Error getting user:', error);
+          // Only log errors that aren't the expected 'Auth session missing' error
+          if (error.message !== 'Auth session missing!') {
+            console.error('Error getting user:', error);
+          }
           return;
         }
 
