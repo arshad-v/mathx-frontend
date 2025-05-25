@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
+import { createClient } from '@supabase/supabase-js';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import Sidebar from './Sidebar';
@@ -7,11 +8,57 @@ import ProfileButton from './ProfileButton';
 
 const Layout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Get user from localStorage
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
+  // Initialize Supabase client
+  const supabaseUrl = import.meta.env.SUPABASE_URL || 'https://iaioivhibyazmntdiadn.supabase.co';
+  const supabaseAnonKey = import.meta.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhaW9pdmhpYnlhem1udGRpYWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwMjg3MjIsImV4cCI6MjA2MjYwNDcyMn0.2yYZQp_FgMso3noCFAT7mwlFZ-ab7xB6E4IQ0UaJkzE';
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+  // Get user from Supabase
+  useEffect(() => {
+    async function getUser() {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase.auth.getUser();
+
+        if (error) {
+          console.error('Error getting user:', error);
+          return;
+        }
+
+        if (data?.user) {
+          setUser(data.user);
+          // Still store in localStorage for compatibility with other components
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+      } catch (err) {
+        console.error('Error fetching user:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    getUser();
+
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+      if (session?.user) {
+        localStorage.setItem('user', JSON.stringify(session.user));
+        localStorage.setItem('token', session.access_token);
+      } else {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const handleProfileClick = () => {
     if (user) {
