@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import Sidebar from './Sidebar';
 import ProfileButton from './ProfileButton';
+import { supabase } from '../lib/supabase';
 
 const Layout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -12,10 +12,7 @@ const Layout: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Initialize Supabase client
-  const supabaseUrl = import.meta.env.SUPABASE_URL || 'https://iaioivhibyazmntdiadn.supabase.co';
-  const supabaseAnonKey = import.meta.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhaW9pdmhpYnlhem1udGRpYWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwMjg3MjIsImV4cCI6MjA2MjYwNDcyMn0.2yYZQp_FgMso3noCFAT7mwlFZ-ab7xB6E4IQ0UaJkzE';
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  // Using the shared Supabase client from lib/supabase.ts
 
   // Get user from Supabase
   useEffect(() => {
