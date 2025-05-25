@@ -78,47 +78,51 @@ const Create: React.FC = () => {
         
         console.log('User data query result:', userData, userError);
         
-        // If user not found in users table, create a new record
+        // If user not found in users table, handle this case gracefully
         if (!userData) {
-          console.log('User found in auth but not in users table, creating new user record');
+          console.log('User found in auth but not in users table');
           
-          // Create new user record with a unique ID for non-OAuth users
-          const newUser: { 
-            email: string; 
-            tokens: number; 
-            created_at: string; 
-            id?: string; 
-            oauth_id?: string; 
-          } = {
-            email: userEmail,
-            tokens: 5, // Default starting tokens
-            created_at: new Date().toISOString()
-          };
+          // Set default tokens for the user
+          console.log('Setting default tokens for new user');
+          setTokens(5); // Default starting tokens for new users
           
-          if (isOAuthUser) {
-            // For OAuth users, store auth ID in oauth_id field and generate a random UUID for id
-            newUser.oauth_id = authId;
-            // Generate a random UUID for the id field
-            newUser.id = crypto.randomUUID();
-          } else {
-            // For email users, use auth ID as primary id
-            newUser.id = authId;
+          // Try to create user via the backend API instead of direct Supabase insert
+          try {
+            // Get the token from localStorage
+            const token = localStorage.getItem('token') || data.session.access_token;
+            
+            if (token) {
+              console.log('Attempting to create user via backend API');
+              const response = await fetch(`${backendUrl}/api/auth/create-user`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  email: userEmail,
+                  authId: authId,
+                  isOAuth: isOAuthUser
+                })
+              });
+              
+              if (response.ok) {
+                const newUserData = await response.json();
+                console.log('Successfully created user via backend:', newUserData);
+              } else {
+                console.log('Backend user creation failed, using default tokens');
+              }
+            }
+          } catch (apiError) {
+            console.error('Error creating user via backend:', apiError);
           }
           
-          console.log('Inserting new user with data:', newUser);
-          
-          const { data: insertedUser, error: insertError } = await supabase
-            .from('users')
-            .insert([newUser])
-            .select();
-            
-          if (insertError) {
-            console.error('Error creating new user record:', insertError);
-            console.error('Error details:', insertError.details, insertError.hint, insertError.code);
+          // Show a message in the console for the admin
+          console.log('If tokens are not persisting, admin needs to manually create this user in Supabase:');
+          if (isOAuthUser) {
+            console.log(`SQL: INSERT INTO users (id, email, tokens, created_at, oauth_id) VALUES (gen_random_uuid(), '${userEmail}', 5, now(), '${authId}');`);
           } else {
-            console.log('Created new user record:', insertedUser);
-            // Use the newly created user data
-            userData = insertedUser[0];
+            console.log(`SQL: INSERT INTO users (id, email, tokens, created_at) VALUES ('${authId}', '${userEmail}', 5, now());`);
           }
         }
         
@@ -223,7 +227,7 @@ const Create: React.FC = () => {
           .maybeSingle();
           
         // If not found by id, try oauth_id
-        if (!findUser && findError?.code === 'PGRST116') {
+        if (!findUser) {
           console.log('User not found by id for update, trying oauth_id');
           const { data: oauthUser, error: oauthError } = await supabase
             .from('users')
@@ -237,41 +241,53 @@ const Create: React.FC = () => {
         
         console.log('Found user for update:', findUser, findError);
         
-        // If user still not found, create a new user record
+        // If user still not found, we can't update the database directly due to RLS
         if (!findUser) {
-          console.log('User not found for token update, creating new record');
+          console.log('User not found for token update');
+          
+          // Just update the local state
+          setTokens(responseData.remainingTokens);
+          
+          // Try to update via backend API
+          try {
+            const token = localStorage.getItem('token') || data.session.access_token;
+            if (token) {
+              console.log('Attempting to update tokens via backend API');
+              const response = await fetch(`${backendUrl}/api/user/update-tokens`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  tokens: responseData.remainingTokens,
+                  authId: authId,
+                  isOAuth: data.session.user.app_metadata?.provider === 'google'
+                })
+              });
+              
+              if (response.ok) {
+                console.log('Successfully updated tokens via backend API');
+              } else {
+                console.log('Backend token update failed, tokens will only be stored in memory');
+              }
+            }
+          } catch (apiError) {
+            console.error('Error updating tokens via backend:', apiError);
+          }
+          
+          // Show SQL for admin to run
           const userEmail = data.session.user.email || '';
           const isOAuthUser = data.session.user.app_metadata?.provider === 'google';
           
-          const newUser: { 
-            email: string; 
-            tokens: number; 
-            created_at: string; 
-            id?: string; 
-            oauth_id?: string; 
-          } = {
-            email: userEmail,
-            tokens: responseData.remainingTokens, // Use the remaining tokens from response
-            created_at: new Date().toISOString()
-          };
-          
+          console.log('Admin needs to run the following SQL to create user with updated tokens:');
           if (isOAuthUser) {
-            newUser.oauth_id = authId;
+            console.log(`SQL: INSERT INTO users (id, email, tokens, created_at, oauth_id) VALUES (gen_random_uuid(), '${userEmail}', ${responseData.remainingTokens}, now(), '${authId}');`);
           } else {
-            newUser.id = authId;
+            console.log(`SQL: INSERT INTO users (id, email, tokens, created_at) VALUES ('${authId}', '${userEmail}', ${responseData.remainingTokens}, now());`);
           }
           
-          const { data: insertedUser, error: insertError } = await supabase
-            .from('users')
-            .insert([newUser])
-            .select();
-            
-          if (insertError) {
-            console.error('Error creating new user record during token update:', insertError);
-          } else {
-            console.log('Created new user record with updated tokens:', insertedUser);
-          }
-          return; // Exit since we've already set the tokens in the new record
+          return; // Exit since we can't update the database
         }
         
         // Determine which field to use for the update
@@ -292,8 +308,12 @@ const Create: React.FC = () => {
         
         if (updateError) {
           console.error('Error updating tokens in Supabase:', updateError);
+          // Update local state even if database update fails
+          setTokens(responseData.remainingTokens);
         } else {
           console.log('Successfully updated tokens to:', responseData.remainingTokens);
+          // Update local state
+          setTokens(responseData.remainingTokens);
         }
       } catch (updateErr) {
         console.error('Failed to update tokens in Supabase:', updateErr);
