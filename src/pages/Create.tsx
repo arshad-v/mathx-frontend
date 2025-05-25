@@ -190,30 +190,48 @@ const Create: React.FC = () => {
     
     const token = data.session.access_token;
 
-    setPrompt(inputPrompt);
+    // Keep the prompt as is
     setStatus('generating');
     setError(null);
-    
+
     try {
+      // Check if user has enough tokens (minimum 1 token required)
+      if (tokens < 1) {
+        throw new Error('Not enough tokens. You need at least 1 token to generate an animation.');
+      }
+      
+      // Calculate new token count before API call (optimistic update)
+      const newTokenCount = Math.max(0, tokens - 1);
+      
+      // Update UI with new token count immediately
+      setTokens(newTokenCount);
+      
       const response = await fetch(`${backendUrl}/api/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ prompt: inputPrompt }),
+        body: JSON.stringify({ 
+          prompt,
+          // Send current token count to backend
+          currentTokens: newTokenCount
+        })
       });
-      
+
       if (!response.ok) {
+        // If API call fails, revert token count
+        setTokens(tokens);
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to generate animation');
       }
-      
+
       const responseData = await response.json();
       setResult(responseData);
       
-      // Update tokens in state
-      setTokens(responseData.remainingTokens);
+      // Update tokens in state with value from response (if available) or keep the optimistic update
+      const finalTokenCount = responseData.remainingTokens !== undefined ? responseData.remainingTokens : newTokenCount;
+      setTokens(finalTokenCount);
       
       // Also update tokens in Supabase table
       try {
@@ -246,8 +264,7 @@ const Create: React.FC = () => {
         if (!findUser) {
           console.log('User not found for token update');
           
-          // Just update the local state
-          setTokens(responseData.remainingTokens);
+          // We've already updated the local state above
           
           // Try to update via backend API
           try {
@@ -263,7 +280,7 @@ const Create: React.FC = () => {
                   'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                  tokens: responseData.remainingTokens
+                  tokens: finalTokenCount
                 })
               });
               
@@ -277,53 +294,40 @@ const Create: React.FC = () => {
             console.error('Error updating tokens via backend:', apiError);
           }
           
-          // Show SQL for admin to run
-          const userEmail = data.session.user.email || '';
-          const isOAuthUser = data.session.user.app_metadata?.provider === 'google';
-          
-          console.log('Admin needs to run the following SQL to create user with updated tokens:');
-          if (isOAuthUser) {
-            console.log(`SQL: INSERT INTO users (id, email, tokens, created_at, oauth_id) VALUES (gen_random_uuid(), '${userEmail}', ${responseData.remainingTokens}, now(), '${authId}');`);
+          // Continue with the function since we've already updated the local state
+        } else {
+          // Determine which field to use for the update
+          let updateQuery;
+          if (findUser.id === authId) {
+            updateQuery = supabase
+              .from('users')
+              .update({ tokens: finalTokenCount })
+              .eq('id', authId);
           } else {
-            console.log(`SQL: INSERT INTO users (id, email, tokens, created_at) VALUES ('${authId}', '${userEmail}', ${responseData.remainingTokens}, now());`);
+            updateQuery = supabase
+              .from('users')
+              .update({ tokens: finalTokenCount })
+              .eq('oauth_id', authId);
           }
           
-          return; // Exit since we can't update the database
-        }
-        
-        // Determine which field to use for the update
-        let updateQuery;
-        if (findUser.id === authId) {
-          updateQuery = supabase
-            .from('users')
-            .update({ tokens: responseData.remainingTokens })
-            .eq('id', authId);
-        } else {
-          updateQuery = supabase
-            .from('users')
-            .update({ tokens: responseData.remainingTokens })
-            .eq('oauth_id', authId);
-        }
-        
-        const { error: updateError } = await updateQuery;
-        
-        if (updateError) {
-          console.error('Error updating tokens in Supabase:', updateError);
-          // Update local state even if database update fails
-          setTokens(responseData.remainingTokens);
-        } else {
-          console.log('Successfully updated tokens to:', responseData.remainingTokens);
-          // Update local state
-          setTokens(responseData.remainingTokens);
+          const { error: updateError } = await updateQuery;
+          
+          if (updateError) {
+            console.error('Error updating tokens in Supabase:', updateError);
+            // We've already updated the local state above
+          } else {
+            console.log('Successfully updated tokens to:', finalTokenCount);
+          }
         }
       } catch (updateErr) {
         console.error('Failed to update tokens in Supabase:', updateErr);
+        // Continue with the function since we've already updated the local state
       }
       
       setStatus('complete');
     } catch (err) {
       console.error('Error generating animation:', err);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      setError(err instanceof Error ? err.message : 'An error occurred');
       setStatus('error');
     }
   };
