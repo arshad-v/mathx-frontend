@@ -33,7 +33,11 @@ const ProfileButton: React.FC<ProfileButtonProps> = ({ onClick, user }) => {
           className="h-10 w-10 rounded-full"
         />
       ) : (
-        <User className="h-6 w-6 text-gray-400" />
+        <img
+          src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+          alt="Profile"
+          className="h-10 w-10 rounded-full"
+        />
       )}
     </button>
   );
