@@ -72,15 +72,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user }) => {
   };
 
   const handleSignOut = () => {
-    // Clear all auth data
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('backend_token');
+    // Clear all auth data from localStorage
+    localStorage.clear(); // Clear everything to be safe
+    sessionStorage.clear(); // Also clear session storage
     
-    // Force page reload to clear any in-memory state
-    navigate('/login');
+    // Clear cookies that might be storing auth data
+    document.cookie.split(';').forEach(cookie => {
+      document.cookie = cookie.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
+    });
+    
+    // Force a complete page reload to reset all React state
     onClose();
-    window.location.reload();
+    window.location.href = '/login'; // Use direct URL change instead of navigate
   };
 
   const ChatList = () => (
