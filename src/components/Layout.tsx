@@ -88,9 +88,9 @@ const Layout: React.FC = () => {
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         user={user ? {
-          email: user.email,
+          email: user.email || user.user_metadata?.email || '',
           plan: 'Personal Plan',
-          avatar: user.avatar
+          avatar: user.user_metadata?.avatar_url || user.avatar
         } : null}
       />
     </div>
