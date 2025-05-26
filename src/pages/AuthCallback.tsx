@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -8,7 +8,10 @@ const AuthCallback: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(true);
   
-  // Using the shared Supabase client from lib/supabase.ts
+  // Initialize Supabase client with the same credentials as in Login.tsx
+  const supabaseUrl = import.meta.env.SUPABASE_URL || 'https://iaioivhibyazmntdiadn.supabase.co';
+  const supabaseAnonKey = import.meta.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhaW9pdmhpYnlhem1udGRpYWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwMjg3MjIsImV4cCI6MjA2MjYwNDcyMn0.2yYZQp_FgMso3noCFAT7mwlFZ-ab7xB6E4IQ0UaJkzE';
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
   useEffect(() => {
     // Handle the OAuth callback
