@@ -78,52 +78,47 @@ const Create: React.FC = () => {
         
         console.log('User data query result:', userData, userError);
         
-        // If user not found in users table, handle this case gracefully
+        // If user not found in users table, create a new record
         if (!userData) {
-          console.log('User found in auth but not in users table');
+          console.log('User found in auth but not in users table, creating new user record');
           
-          // Set default tokens for the user
-          console.log('Setting default tokens for new user');
-          setTokens(5); // Default starting tokens for new users
+          // Create new user record with a unique ID for non-OAuth users
+          const newUser: { 
+            email: string; 
+            tokens: number; 
+            created_at: string; 
+            id?: string; 
+            oauth_id?: string; 
+          } = {
+            email: userEmail,
+            tokens: 5, // Default starting tokens
+            created_at: new Date().toISOString()
+          };
           
-          // Try to create user via the backend API instead of direct Supabase insert
-          try {
-            // Get the token from localStorage
-            const token = localStorage.getItem('token') || data.session.access_token;
-            
-            if (token) {
-              console.log('Attempting to create user via backend API');
-              // Use the existing register endpoint instead of a non-existent create-user endpoint
-              const response = await fetch(`${backendUrl}/api/auth/register`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                  email: userEmail,
-                  password: data.session.access_token.substring(0, 20), // Use part of the token as a password
-                  tokens: 5 // Default starting tokens
-                })
-              });
-              
-              if (response.ok) {
-                const newUserData = await response.json();
-                console.log('Successfully created user via backend:', newUserData);
-              } else {
-                console.log('Backend user creation failed, using default tokens');
-              }
-            }
-          } catch (apiError) {
-            console.error('Error creating user via backend:', apiError);
+          if (isOAuthUser) {
+            // For OAuth users, store auth ID in oauth_id field and generate a random UUID for id
+            newUser.oauth_id = authId;
+            // Generate a random UUID for the id field
+            newUser.id = crypto.randomUUID();
+          } else {
+            // For email users, use auth ID as primary id
+            newUser.id = authId;
           }
           
-          // Show a message in the console for the admin
-          console.log('If tokens are not persisting, admin needs to manually create this user in Supabase:');
-          if (isOAuthUser) {
-            console.log(`SQL: INSERT INTO users (id, email, tokens, created_at, oauth_id) VALUES (gen_random_uuid(), '${userEmail}', 5, now(), '${authId}');`);
+          console.log('Inserting new user with data:', newUser);
+          
+          const { data: insertedUser, error: insertError } = await supabase
+            .from('users')
+            .insert([newUser])
+            .select();
+            
+          if (insertError) {
+            console.error('Error creating new user record:', insertError);
+            console.error('Error details:', insertError.details, insertError.hint, insertError.code);
           } else {
-            console.log(`SQL: INSERT INTO users (id, email, tokens, created_at) VALUES ('${authId}', '${userEmail}', 5, now());`);
+            console.log('Created new user record:', insertedUser);
+            // Use the newly created user data
+            userData = insertedUser[0];
           }
         }
         
@@ -138,7 +133,7 @@ const Create: React.FC = () => {
             const backendToken = localStorage.getItem('token');
             if (backendToken) {
               console.log('Using existing backend token from localStorage');
-              const response = await fetch(`${backendUrl}/api/user/tokens`, {
+              const response = await fetch(`${backendUrl}/api/user`, {
                 headers: {
                   'Authorization': `Bearer ${backendToken}`
                 }
@@ -190,48 +185,30 @@ const Create: React.FC = () => {
     
     const token = data.session.access_token;
 
-    // Keep the prompt as is
+    setPrompt(inputPrompt);
     setStatus('generating');
     setError(null);
-
+    
     try {
-      // Check if user has enough tokens (minimum 1 token required)
-      if (tokens < 1) {
-        throw new Error('Not enough tokens. You need at least 1 token to generate an animation.');
-      }
-      
-      // Calculate new token count before API call (optimistic update)
-      const newTokenCount = Math.max(0, tokens - 1);
-      
-      // Update UI with new token count immediately
-      setTokens(newTokenCount);
-      
       const response = await fetch(`${backendUrl}/api/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ 
-          prompt,
-          // Send current token count to backend
-          currentTokens: newTokenCount
-        })
+        body: JSON.stringify({ prompt: inputPrompt }),
       });
-
+      
       if (!response.ok) {
-        // If API call fails, revert token count
-        setTokens(tokens);
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to generate animation');
       }
-
+      
       const responseData = await response.json();
       setResult(responseData);
       
-      // Update tokens in state with value from response (if available) or keep the optimistic update
-      const finalTokenCount = responseData.remainingTokens !== undefined ? responseData.remainingTokens : newTokenCount;
-      setTokens(finalTokenCount);
+      // Update tokens in state
+      setTokens(responseData.remainingTokens);
       
       // Also update tokens in Supabase table
       try {
@@ -246,7 +223,7 @@ const Create: React.FC = () => {
           .maybeSingle();
           
         // If not found by id, try oauth_id
-        if (!findUser) {
+        if (!findUser && findError?.code === 'PGRST116') {
           console.log('User not found by id for update, trying oauth_id');
           const { data: oauthUser, error: oauthError } = await supabase
             .from('users')
@@ -260,74 +237,72 @@ const Create: React.FC = () => {
         
         console.log('Found user for update:', findUser, findError);
         
-        // If user still not found, we can't update the database directly due to RLS
+        // If user still not found, create a new user record
         if (!findUser) {
-          console.log('User not found for token update');
+          console.log('User not found for token update, creating new record');
+          const userEmail = data.session.user.email || '';
+          const isOAuthUser = data.session.user.app_metadata?.provider === 'google';
           
-          // We've already updated the local state above
+          const newUser: { 
+            email: string; 
+            tokens: number; 
+            created_at: string; 
+            id?: string; 
+            oauth_id?: string; 
+          } = {
+            email: userEmail,
+            tokens: responseData.remainingTokens, // Use the remaining tokens from response
+            created_at: new Date().toISOString()
+          };
           
-          // Try to update via backend API
-          try {
-            const token = localStorage.getItem('token') || data.session.access_token;
-            if (token) {
-              console.log('Attempting to update tokens via backend API');
-              // Use the existing tokens endpoint
-              const response = await fetch(`${backendUrl}/api/user/tokens`, {
-                // Using PUT method for updating tokens
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                  tokens: finalTokenCount
-                })
-              });
-              
-              if (response.ok) {
-                console.log('Successfully updated tokens via backend API');
-              } else {
-                console.log('Backend token update failed, tokens will only be stored in memory');
-              }
-            }
-          } catch (apiError) {
-            console.error('Error updating tokens via backend:', apiError);
+          if (isOAuthUser) {
+            newUser.oauth_id = authId;
+          } else {
+            newUser.id = authId;
           }
           
-          // Continue with the function since we've already updated the local state
+          const { data: insertedUser, error: insertError } = await supabase
+            .from('users')
+            .insert([newUser])
+            .select();
+            
+          if (insertError) {
+            console.error('Error creating new user record during token update:', insertError);
+          } else {
+            console.log('Created new user record with updated tokens:', insertedUser);
+          }
+          return; // Exit since we've already set the tokens in the new record
+        }
+        
+        // Determine which field to use for the update
+        let updateQuery;
+        if (findUser.id === authId) {
+          updateQuery = supabase
+            .from('users')
+            .update({ tokens: responseData.remainingTokens })
+            .eq('id', authId);
         } else {
-          // Determine which field to use for the update
-          let updateQuery;
-          if (findUser.id === authId) {
-            updateQuery = supabase
-              .from('users')
-              .update({ tokens: finalTokenCount })
-              .eq('id', authId);
-          } else {
-            updateQuery = supabase
-              .from('users')
-              .update({ tokens: finalTokenCount })
-              .eq('oauth_id', authId);
-          }
-          
-          const { error: updateError } = await updateQuery;
-          
-          if (updateError) {
-            console.error('Error updating tokens in Supabase:', updateError);
-            // We've already updated the local state above
-          } else {
-            console.log('Successfully updated tokens to:', finalTokenCount);
-          }
+          updateQuery = supabase
+            .from('users')
+            .update({ tokens: responseData.remainingTokens })
+            .eq('oauth_id', authId);
+        }
+        
+        const { error: updateError } = await updateQuery;
+        
+        if (updateError) {
+          console.error('Error updating tokens in Supabase:', updateError);
+        } else {
+          console.log('Successfully updated tokens to:', responseData.remainingTokens);
         }
       } catch (updateErr) {
         console.error('Failed to update tokens in Supabase:', updateErr);
-        // Continue with the function since we've already updated the local state
       }
       
       setStatus('complete');
     } catch (err) {
       console.error('Error generating animation:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
       setStatus('error');
     }
   };
