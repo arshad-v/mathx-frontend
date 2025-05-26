@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight, LogIn } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -12,7 +12,10 @@ const Register: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  // Using the shared Supabase client from lib/supabase.ts
+  // Initialize Supabase client
+  const supabaseUrl = import.meta.env.SUPABASE_URL || 'https://iaioivhibyazmntdiadn.supabase.co';
+  const supabaseAnonKey = import.meta.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhaW9pdmhpYnlhem1udGRpYWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwMjg3MjIsImV4cCI6MjA2MjYwNDcyMn0.2yYZQp_FgMso3noCFAT7mwlFZ-ab7xB6E4IQ0UaJkzE';
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
   const handleEmailRegister = async (e: React.FormEvent) => {
     e.preventDefault();
