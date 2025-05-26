@@ -54,11 +54,46 @@ const Create: React.FC = () => {
         try {
           // Get the user's auth_id from Supabase
           const authId = data.session.user.id;
+          console.log('Fetching tokens for auth ID:', authId);
           
-          // Query the users table to get tokens for this user
+          // First try to get the backend token
+          let backendToken = localStorage.getItem('backend_token');
+          
+          // If no backend token exists, create one
+          if (!backendToken) {
+            console.log('No backend token found, creating one...');
+            try {
+              const verifyResponse = await fetch(`${backendUrl}/api/auth/verify-oauth-user`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  email: data.session.user.email || '',
+                  supabaseId: authId,
+                  authId: authId,
+                }),
+              });
+              
+              if (verifyResponse.ok) {
+                const verifyData = await verifyResponse.json();
+                backendToken = verifyData.token;
+                if (backendToken) {
+                  localStorage.setItem('backend_token', backendToken);
+                }
+                console.log('Successfully created backend token');
+              } else {
+                console.error('Failed to create backend token');
+              }
+            } catch (verifyError) {
+              console.error('Error creating backend token:', verifyError);
+            }
+          }
+          
+          // Try to query the users table to get tokens for this user
           const { data: userData, error: userError } = await supabase
             .from('users')
-            .select('tokens')
+            .select('tokens, id')
             .eq('auth_id', authId)
             .single();
           
@@ -66,15 +101,36 @@ const Create: React.FC = () => {
             console.error('Error fetching user tokens from Supabase:', userError);
             
             // Fallback to API if Supabase query fails
-            const response = await fetch(`${backendUrl}/api/user/tokens`, {
-              headers: {
-                'Authorization': `Bearer ${token}`
+            if (backendToken) {
+              console.log('Falling back to API for token fetch');
+              try {
+                const response = await fetch(`${backendUrl}/api/user/tokens`, {
+                  headers: {
+                    'Authorization': `Bearer ${backendToken || ''}`
+                  }
+                });
+                
+                if (response.ok) {
+                  const tokenData = await response.json();
+                  console.log('Successfully fetched tokens from API:', tokenData.tokens);
+                  setTokens(tokenData.tokens);
+                } else {
+                  console.error('API token fetch failed:', await response.text());
+                  setError('Failed to fetch tokens. Please try logging in again.');
+                  setTokens(0);
+                }
+              } catch (apiError) {
+                console.error('API token fetch error:', apiError);
+                setError('Failed to connect to the backend server.');
+                setTokens(0);
               }
-            });
-            const tokenData = await response.json();
-            setTokens(tokenData.tokens);
+            } else {
+              console.error('No backend token available for API fallback');
+              setError('Authentication error. Please try logging in again.');
+              setTokens(0);
+            }
           } else if (userData) {
-            console.log('Successfully fetched tokens from Supabase:', userData.tokens);
+            console.log('Successfully fetched tokens from Supabase:', userData);
             setTokens(userData.tokens);
           } else {
             console.warn('User found in auth but not in users table');
@@ -106,56 +162,56 @@ const Create: React.FC = () => {
       return;
     }
 
-    // Get the current session token
-    const { data, error } = await supabase.auth.getSession();
-    if (error || !data.session) {
-      console.error('No active session:', error);
+    // Get the backend token for API authorization
+    const backendToken = localStorage.getItem('backend_token');
+    if (!backendToken) {
+      setError('Authentication error. Please try logging in again.');
       navigate('/login');
       return;
     }
-    
-    const token = data.session.access_token;
 
-    setPrompt(inputPrompt);
+    if (tokens <= 0) {
+      setError('You have no tokens left. Please purchase more.');
+      return;
+    }
+
     setStatus('generating');
+    setPrompt(inputPrompt);
     setError(null);
-    
+
     try {
+      console.log('Sending animation generation request...');
       const response = await fetch(`${backendUrl}/api/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${backendToken}`
         },
-        body: JSON.stringify({ prompt: inputPrompt }),
+        body: JSON.stringify({ prompt: inputPrompt })
       });
-      
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to generate animation');
-      }
-      
-      const responseData = await response.json();
-      setResult(responseData);
-      
-      // Update tokens in state
-      setTokens(responseData.remainingTokens);
-      
-      // Also update tokens in Supabase table
-      try {
-        const authId = data.session.user.id;
-        const { error: updateError } = await supabase
-          .from('users')
-          .update({ tokens: responseData.remainingTokens })
-          .eq('auth_id', authId);
-          
-        if (updateError) {
-          console.error('Error updating tokens in Supabase:', updateError);
+        const errorText = await response.text();
+        let errorMessage = 'Failed to generate animation';
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // If the error response isn't valid JSON, use the raw text
+          errorMessage = errorText || errorMessage;
         }
-      } catch (updateErr) {
-        console.error('Failed to update tokens in Supabase:', updateErr);
+        
+        throw new Error(errorMessage);
       }
-      
+
+      const data = await response.json();
+      console.log('Animation generated successfully:', data);
+      setResult({
+        videoUrl: data.videoUrl,
+        remainingTokens: data.remainingTokens
+      });
+      setTokens(data.remainingTokens);
       setStatus('complete');
     } catch (err) {
       console.error('Error generating animation:', err);
