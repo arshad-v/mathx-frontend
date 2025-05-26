@@ -47,12 +47,24 @@ const Layout: React.FC = () => {
     getUser();
 
     // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
-      if (session?.user) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session ? 'User logged in' : 'No session');
+      
+      if (event === 'SIGNED_OUT') {
+        // Handle sign out event
+        console.log('User signed out, clearing all state');
+        setUser(null);
+        localStorage.clear();
+        sessionStorage.clear();
+      } else if (session?.user) {
+        // Handle sign in event
+        console.log('User signed in:', session.user.email);
+        setUser(session.user);
         localStorage.setItem('user', JSON.stringify(session.user));
         localStorage.setItem('token', session.access_token);
       } else {
+        // Handle other events with no session
+        setUser(null);
         localStorage.removeItem('user');
         localStorage.removeItem('token');
       }
