@@ -3,15 +3,6 @@ import { Session } from '@supabase/supabase-js';
 // Default to localhost:3000 if no backend URL is provided
 const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://manim-ai-backend-943004966625.asia-south1.run.app';
 
-// Define a custom event for auth changes
-export const AUTH_CHANGE_EVENT = 'auth-state-change';
-
-// Dispatch auth change event
-export function dispatchAuthChangeEvent() {
-  console.log('Dispatching auth change event');
-  window.dispatchEvent(new CustomEvent(AUTH_CHANGE_EVENT));
-}
-
 /**
  * Converts a Supabase session to a JWT token for the backend
  */
@@ -34,7 +25,6 @@ export async function getBackendToken(session: Session | null): Promise<string |
     console.log('Using backend URL:', backendUrl);
     
     // Call the backend endpoint to verify the OAuth user and get a JWT token
-    // IMPORTANT: The backend only expects email and supabaseId
     const response = await fetch(`${backendUrl}/api/auth/verify-oauth-user`, {
       method: 'POST',
       headers: {
@@ -43,6 +33,7 @@ export async function getBackendToken(session: Session | null): Promise<string |
       body: JSON.stringify({
         email: session.user?.email,
         supabaseId: session.user?.id,
+        authId: session.user?.id, // Include auth_id for direct Supabase queries
       }),
     });
     
@@ -69,24 +60,10 @@ export async function getBackendToken(session: Session | null): Promise<string |
     }
     
     // Store the backend token in localStorage
-    // Clear any previous tokens to avoid conflicts
-    localStorage.removeItem('backend_token');
-    localStorage.removeItem('user');
-    
-    // Store the token and user data exactly as received from the backend
     localStorage.setItem('backend_token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     
-    // Store the Supabase ID for reference
-    localStorage.setItem('supabase_id', session.user?.id || 'unknown');
-    
-    // Set auth state to true
-    localStorage.setItem('is_authenticated', 'true');
-    
-    // Dispatch auth change event
-    dispatchAuthChangeEvent();
-    
-    console.log('Successfully stored backend token and user data for user:', session.user?.email);
+    console.log('Successfully stored backend token and user data');
     return data.token;
   } catch (error) {
     console.error('Error getting backend token:', error);
@@ -122,16 +99,4 @@ export function getStoredUser(): any {
 export function clearAuthData(): void {
   localStorage.removeItem('backend_token');
   localStorage.removeItem('user');
-  localStorage.removeItem('supabase_id');
-  localStorage.removeItem('is_authenticated');
-  
-  // Dispatch auth change event
-  dispatchAuthChangeEvent();
-}
-
-/**
- * Checks if the user is authenticated
- */
-export function isAuthenticated(): boolean {
-  return localStorage.getItem('is_authenticated') === 'true' && !!getStoredBackendToken();
 }
