@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Loader, Play, Download, Coins } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
 import PromptForm from '../components/PromptForm';
 import VideoPlayer from '../components/VideoPlayer';
-import { supabase } from '../lib/supabase';
 
 type Status = 'idle' | 'generating' | 'complete' | 'error';
 
@@ -22,7 +22,10 @@ const Create: React.FC = () => {
   const [tokens, setTokens] = useState<number>(0);
   const [serverAvailable, setServerAvailable] = useState(true);
 
-  // Using the shared Supabase client from lib/supabase.ts
+  // Initialize Supabase client
+  const supabaseUrl = import.meta.env.SUPABASE_URL || 'https://iaioivhibyazmntdiadn.supabase.co';
+  const supabaseAnonKey = import.meta.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhaW9pdmhpYnlhem1udGRpYWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwMjg3MjIsImV4cCI6MjA2MjYwNDcyMn0.2yYZQp_FgMso3noCFAT7mwlFZ-ab7xB6E4IQ0UaJkzE';
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
   
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -37,125 +40,57 @@ const Create: React.FC = () => {
           if (error && error.message !== 'Auth session missing!') {
             console.error('Authentication error:', error);
           } else {
-            console.log('No active session found');
+            console.log('No active session, redirecting to login');
           }
           navigate('/login');
           return;
         }
         
-        console.log('Found existing session');
-        const authId = data.session.user.id;
-        const userEmail = data.session.user.email || '';
-        const isOAuthUser = data.session.user.app_metadata?.provider === 'google';
+        // We have a valid session, store the token for API calls
+        const token = data.session.access_token;
+        localStorage.setItem('token', token);
         
-        console.log('User details:', {
-          id: authId,
-          email: userEmail,
-          isOAuth: isOAuthUser,
-          provider: data.session.user.app_metadata?.provider
-        });
-        
-        // Try to fetch user data from Supabase users table
-        // First check if user exists with id matching auth ID
-        let { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('id, email, tokens, oauth_id')
-          .eq('id', authId)
-          .maybeSingle();
+        // Fetch user tokens directly from Supabase table
+        try {
+          // Get the user's ID from Supabase
+          const authId = data.session.user.id;
+          console.log('Current user ID:', authId);
           
-        // If not found by id, try oauth_id
-        if (!userData) {
-          console.log('User not found by id, trying oauth_id');
-          const { data: oauthUserData, error: oauthError } = await supabase
+          // Query the users table to get tokens for this user
+          // Try both id and oauth_id fields since we don't know which one is used for this user
+          const { data: userData, error: userError } = await supabase
             .from('users')
-            .select('id, email, tokens, oauth_id')
-            .eq('oauth_id', authId)
-            .maybeSingle();
+            .select('tokens')
+            .or(`id.eq.${authId},oauth_id.eq.${authId}`)
+            .single();
+          
+          console.log('User data query result:', userData, userError);
+          
+          if (userError) {
+            console.error('Error fetching user tokens from Supabase:', userError);
             
-          userData = oauthUserData;
-          userError = oauthError;
-        }
-        
-        console.log('User data query result:', userData, userError);
-        
-        // If user not found in users table, create a new record
-        if (!userData) {
-          console.log('User found in auth but not in users table, creating new user record');
-          
-          // Create new user record with a unique ID for non-OAuth users
-          const newUser: { 
-            email: string; 
-            tokens: number; 
-            created_at: string; 
-            id?: string; 
-            oauth_id?: string; 
-          } = {
-            email: userEmail,
-            tokens: 5, // Default starting tokens
-            created_at: new Date().toISOString()
-          };
-          
-          if (isOAuthUser) {
-            // For OAuth users, store auth ID in oauth_id field and generate a random UUID for id
-            newUser.oauth_id = authId;
-            // Generate a random UUID for the id field
-            newUser.id = crypto.randomUUID();
-          } else {
-            // For email users, use auth ID as primary id
-            newUser.id = authId;
-          }
-          
-          console.log('Inserting new user with data:', newUser);
-          
-          const { data: insertedUser, error: insertError } = await supabase
-            .from('users')
-            .insert([newUser])
-            .select();
-            
-          if (insertError) {
-            console.error('Error creating new user record:', insertError);
-            console.error('Error details:', insertError.details, insertError.hint, insertError.code);
-          } else {
-            console.log('Created new user record:', insertedUser);
-            // Use the newly created user data
-            userData = insertedUser[0];
-          }
-        }
-        
-        // Set tokens from user data if available
-        if (userData) {
-          console.log('Setting tokens from user data:', userData.tokens);
-          setTokens(userData.tokens || 0);
-        } else {
-          // Fallback to API endpoint if Supabase query fails
-          try {
-            // Try to get tokens from backend API
-            const backendToken = localStorage.getItem('token');
-            if (backendToken) {
-              console.log('Using existing backend token from localStorage');
-              const response = await fetch(`${backendUrl}/api/user`, {
-                headers: {
-                  'Authorization': `Bearer ${backendToken}`
-                }
-              });
-              
-              if (response.ok) {
-                const userData = await response.json();
-                console.log('Successfully retrieved backend user data');
-                setTokens(userData.tokens || 0);
-              } else {
-                console.error('Failed to fetch user data from backend');
+            // Fallback to API if Supabase query fails
+            const response = await fetch(`${backendUrl}/api/user/tokens`, {
+              headers: {
+                'Authorization': `Bearer ${token}`
               }
-            }
-          } catch (apiError) {
-            console.error('Error fetching user data from API:', apiError);
+            });
+            const tokenData = await response.json();
+            setTokens(tokenData.tokens);
+          } else if (userData) {
+            console.log('Successfully fetched tokens from Supabase:', userData.tokens);
+            setTokens(userData.tokens);
+          } else {
+            console.warn('User found in auth but not in users table');
+            setTokens(0);
           }
+        } catch (tokenErr) {
+          console.error('Error fetching tokens:', tokenErr);
+          setError('Failed to fetch tokens');
         }
-        
-        // Log current user info
-        console.log('Current user ID:', data.session.user.id, 'Email:', data.session.user.email);
       } catch (err) {
-        console.error('Error in initializeData:', err);
+        console.error('Error checking authentication:', err);
+        navigate('/login');
       }
     }
     
@@ -215,63 +150,18 @@ const Create: React.FC = () => {
         const authId = data.session.user.id;
         console.log('Updating tokens for user ID:', authId);
         
-        // First check if user exists with id matching auth ID
-        let { data: findUser, error: findError } = await supabase
+        // First try to find the user to determine which field to use
+        const { data: findUser, error: findError } = await supabase
           .from('users')
           .select('id, oauth_id')
-          .eq('id', authId)
-          .maybeSingle();
+          .or(`id.eq.${authId},oauth_id.eq.${authId}`)
+          .single();
           
-        // If not found by id, try oauth_id
-        if (!findUser && findError?.code === 'PGRST116') {
-          console.log('User not found by id for update, trying oauth_id');
-          const { data: oauthUser, error: oauthError } = await supabase
-            .from('users')
-            .select('id, oauth_id')
-            .eq('oauth_id', authId)
-            .maybeSingle();
-            
-          findUser = oauthUser;
-          findError = oauthError;
-        }
-        
         console.log('Found user for update:', findUser, findError);
         
-        // If user still not found, create a new user record
-        if (!findUser) {
-          console.log('User not found for token update, creating new record');
-          const userEmail = data.session.user.email || '';
-          const isOAuthUser = data.session.user.app_metadata?.provider === 'google';
-          
-          const newUser: { 
-            email: string; 
-            tokens: number; 
-            created_at: string; 
-            id?: string; 
-            oauth_id?: string; 
-          } = {
-            email: userEmail,
-            tokens: responseData.remainingTokens, // Use the remaining tokens from response
-            created_at: new Date().toISOString()
-          };
-          
-          if (isOAuthUser) {
-            newUser.oauth_id = authId;
-          } else {
-            newUser.id = authId;
-          }
-          
-          const { data: insertedUser, error: insertError } = await supabase
-            .from('users')
-            .insert([newUser])
-            .select();
-            
-          if (insertError) {
-            console.error('Error creating new user record during token update:', insertError);
-          } else {
-            console.log('Created new user record with updated tokens:', insertedUser);
-          }
-          return; // Exit since we've already set the tokens in the new record
+        if (findError) {
+          console.error('Error finding user for token update:', findError);
+          return;
         }
         
         // Determine which field to use for the update
@@ -459,4 +349,3 @@ const Create: React.FC = () => {
 };
 
 export default Create;
-
