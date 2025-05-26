@@ -72,10 +72,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user }) => {
   };
 
   const handleSignOut = () => {
+    // Clear all auth data
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('backend_token');
+    
+    // Force page reload to clear any in-memory state
     navigate('/login');
     onClose();
+    window.location.reload();
   };
 
   const ChatList = () => (
