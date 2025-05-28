@@ -27,7 +27,11 @@ const Create: React.FC = () => {
   const supabaseAnonKey = import.meta.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhaW9pdmhpYnlhem1udGRpYWRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcwMjg3MjIsImV4cCI6MjA2MjYwNDcyMn0.2yYZQp_FgMso3noCFAT7mwlFZ-ab7xB6E4IQ0UaJkzE';
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
   
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  // Use environment variable with fallback to production backend URL
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://manim-ai-backend-943004966625.asia-south1.run.app';
+  
+  // Log the backend URL being used
+  console.log('Using backend URL:', backendUrl);
 
   useEffect(() => {
     async function initializeData() {
