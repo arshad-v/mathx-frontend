@@ -38,18 +38,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ videoUrl }) => {
     }
   };
 
-  // Construct the full video URL using the environment variable
-  const fullVideoUrl = `${import.meta.env.VITE_BACKEND_URL}/${videoUrl}`;
+  // Construct the full video URL using the environment variable with fallback
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://manim-ai-backend-943004966625.asia-south1.run.app';
+  const fullVideoUrl = `${backendUrl}${videoUrl}`;
+  
+  console.log('Playing video from URL:', fullVideoUrl);
   
   return (
     <div className="video-container relative group">
       <video
         ref={videoRef}
-        src={fullVideoUrl}
-        className="w-full h-full object-contain bg-black"
+        className="w-full h-full object-contain bg-black rounded-lg"
         controls={false}
         playsInline
-      />
+        onError={(e) => console.error('Video error:', e)}
+        onLoadedData={() => console.log('Video loaded successfully')}
+      >
+        <source src={fullVideoUrl} type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
       
       {/* Video controls overlay */}
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
